@@ -1,11 +1,11 @@
-// Prisma schema - SQLite default; swap provider for Postgres in prod.
+// Prisma schema - PostgreSQL for persistent production storage.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -16,6 +16,8 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   image         String?
+  passwordHash  String?   // null = OAuth-only account (signed up via Google, never set a password)
+  isGuest       Boolean   @default(false) // true = ephemeral guest (created via /api/auth/guest)
   rating        Int       @default(1200)
   rd            Float     @default(350.0)
   volatility    Float     @default(0.06)

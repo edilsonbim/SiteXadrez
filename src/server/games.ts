@@ -149,17 +149,30 @@ export async function playAiMove(opts: { gameId: string }) {
 }
 
 export async function finalizeRating(gameId: string) {
-  const game = await prisma.game.findUnique({ where: { id: gameId }, include: { white: true, black: true } });
+  const game = await prisma.game.findUnique({
+    where: { id: gameId },
+    include: {
+      white: { select: { id: true, rating: true, rd: true, gamesPlayed: true, wins: true, losses: true, draws: true, isGuest: true } },
+      black: { select: { id: true, rating: true, rd: true, gamesPlayed: true, wins: true, losses: true, draws: true, isGuest: true } },
+    },
+  });
   if (!game || game.status !== "FINISHED") return null;
   const updates: Array<Promise<any>> = [];
   if (game.mode === "PVE" && game.white) {
-    const w = game.white;
-    const score = game.result === "WHITE_WIN" ? 1 : game.result === "DRAW" ? 0.5 : 0;
-    const u = updateRating({ selfRating: w.rating, selfRd: w.rd, selfGames: w.gamesPlayed, oppRating: engineForRating(w.rating).minRating + 200, oppRd: 200, score });
-    updates.push(prisma.user.update({ where: { id: w.id }, data: { rating: u.rating, rd: u.rd, gamesPlayed: w.gamesPlayed + 1, wins: w.wins + (score === 1 ? 1 : 0), losses: w.losses + (score === 0 ? 1 : 0), draws: w.draws + (score === 0.5 ? 1 : 0) } }));
-    updates.push(prisma.ratingHistory.create({ data: { userId: w.id, gameId: game.id, rating: u.rating, rd: u.rd, delta: u.delta, reason: score === 1 ? "game_win" : score === 0 ? "game_loss" : "game_draw" } }));
+    // PvE never counts guest rating: if the human is a guest, skip.
+    if (!game.white.isGuest) {
+      const w = game.white;
+      const score = game.result === "WHITE_WIN" ? 1 : game.result === "DRAW" ? 0.5 : 0;
+      const u = updateRating({ selfRating: w.rating, selfRd: w.rd, selfGames: w.gamesPlayed, oppRating: engineForRating(w.rating).minRating + 200, oppRd: 200, score });
+      updates.push(prisma.user.update({ where: { id: w.id }, data: { rating: u.rating, rd: u.rd, gamesPlayed: w.gamesPlayed + 1, wins: w.wins + (score === 1 ? 1 : 0), losses: w.losses + (score === 0 ? 1 : 0), draws: w.draws + (score === 0.5 ? 1 : 0) } }));
+      updates.push(prisma.ratingHistory.create({ data: { userId: w.id, gameId: game.id, rating: u.rating, rd: u.rd, delta: u.delta, reason: score === 1 ? "game_win" : score === 0 ? "game_loss" : "game_draw" } }));
+    }
   }
   if (game.mode === "PVP" && game.white && game.black) {
+    // Casual match if either side is a guest: no rating changes, no history.
+    if (game.white.isGuest || game.black.isGuest) {
+      return { ok: true, casual: true };
+    }
     const w = game.white, b = game.black;
     const sw = game.result === "WHITE_WIN" ? 1 : game.result === "DRAW" ? 0.5 : 0;
     const sb = 1 - sw;

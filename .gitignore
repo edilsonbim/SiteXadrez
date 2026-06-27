@@ -13,6 +13,10 @@ coverage
 prisma/dev.db
 prisma/dev.db-journal
 prisma/migrations/dev.db*
+.pgdata/
+client_secret_689867216050-am564fsbg13poq5oqevht20ks36em3nf.apps.googleusercontent.com.json
+my-chess-site@dev
+vite
 
 .DS_Store
 Thumbs.db

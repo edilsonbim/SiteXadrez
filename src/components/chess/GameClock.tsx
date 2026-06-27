@@ -13,7 +13,7 @@ export function GameClock({ seconds, active }: { seconds: number; active: boolea
   const mm = Math.floor(s / 60).toString().padStart(2, "0");
   const ss = (s % 60).toString().padStart(2, "0");
   return (
-    <span className={`tabular-nums text-lg px-2 py-1 rounded-md border ${active ? "border-accent text-accent" : "border-line text-ink-soft"}`}>
+    <span className={`tabular-nums text-lg px-3 py-1.5 rounded-full border ${active ? "border-accent text-accent shadow-glow" : "border-white/10 text-ink-soft"} transition-all duration-200`}>
       {mm}:{ss}
     </span>
   );

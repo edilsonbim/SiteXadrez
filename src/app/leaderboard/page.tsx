@@ -11,8 +11,8 @@ export default async function LeaderboardPage() {
     select: { id: true, name: true, image: true, rating: true, gamesPlayed: true, wins: true, losses: true, draws: true },
   });
   return (
-    <Card>
-      <CardHeader><CardTitle>Top 50 jogadores</CardTitle></CardHeader>
+      <Card>
+        <CardHeader><CardTitle>Ranking Rookary</CardTitle></CardHeader>
       <CardContent>
         <table className="w-full text-sm">
           <thead className="text-ink-soft text-xs uppercase">

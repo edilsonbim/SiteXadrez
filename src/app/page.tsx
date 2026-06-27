@@ -12,59 +12,68 @@ export default async function Home() {
   const online = await prisma.game.count({ where: { status: "IN_PROGRESS" } });
 
   return (
-    <div className="space-y-10">
-      <section className="grid gap-6 md:grid-cols-2 md:items-center">
-        <div className="space-y-4">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-            Jogue xadrez online, com <span className="text-accent">rating real</span>.
+    <div className="space-y-8 enter-rise">
+      <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <div className="space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] uppercase tracking-[0.28em] text-ink-soft animate-float-slow">
+            <span className="h-2 w-2 rounded-full bg-accent shadow-glow" />
+            Edição atual
+          </div>
+          <h1 className="max-w-3xl font-display text-5xl leading-[0.95] tracking-tight text-ink md:text-6xl">
+            Rookary Chess com leitura clara, torneio sério e navegação direta.
           </h1>
-          <p className="text-ink-soft text-lg max-w-prose">
-            Entre com sua conta Google, ganhe um rating inicial e dispute partidas contra a maquina
-            (com nivel ajustado ao seu rating) ou contra outros jogadores via matchmaking.
+          <p className="max-w-2xl text-base md:text-lg leading-8 text-ink-soft">
+            Uma mesa de xadrez com acabamento clássico, transições suaves e leitura visual de alto contraste.
           </p>
           <div className="flex flex-wrap gap-3">
             {me ? (
               <>
-                <Link href="/lobby"><Button size="lg">Abrir Lobby</Button></Link>
-                <Link href="/profile"><Button variant="secondary" size="lg">Meu perfil</Button></Link>
+                <Link href="/lobby"><Button size="lg">Jogue agora</Button></Link>
+                <Link href="/profile"><Button variant="secondary" size="lg">Minha conta</Button></Link>
               </>
             ) : (
-              <Link href="/login"><Button size="lg">Entrar com Google</Button></Link>
+              <Link href="/login"><Button size="lg">Jogue agora</Button></Link>
             )}
           </div>
         </div>
-        <div className="rounded-2xl bg-bg-card border border-line p-6 space-y-4">
+        <div className="panel-glass rounded-[2rem] p-6 border border-white/10">
           <div className="flex items-center justify-between">
-            <span className="text-ink-soft">Seu rating</span>
-            {me ? <RatingBadge rating={me.rating} /> : <span className="text-ink-soft">—</span>}
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-ink-soft">Partidas em andamento</span>
-            <span className="text-ink tabular-nums">{online}</span>
-          </div>
-          {me && (
-            <div className="flex items-center justify-between">
-              <span className="text-ink-soft">Nivel da IA</span>
-              <span className="text-ink">{engineForRating(me.rating).label}</span>
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.28em] text-ink-soft">Mesa ativa</p>
+              <p className="mt-1 font-display text-2xl text-ink">Torneio</p>
             </div>
-          )}
+            {me ? <RatingBadge rating={me.rating} /> : <span className="text-ink-soft">entre para ver seu rating</span>}
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <Stat title="Partidas ativas" value={online.toString()} />
+            <Stat title="IA padrão" value={me ? engineForRating(me.rating).label : "Disponível"} />
+          </div>
         </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
-        <FeatureCard title="Vs IA" body="Motor Stockfish com profundidade e skill level ajustados automaticamente ao seu rating." />
-        <FeatureCard title="Vs Players" body="Matchmaking por rating com janela que expande conforme o tempo de espera." />
-        <FeatureCard title="PGN e FEN" body="Cada partida gera PGN completo, replay possivel e historico de rating por jogo." />
+        <FeatureCard title="Mesa" body="Superfície escura, leve brilho de madeira e contraste alto." />
+        <FeatureCard title="Entrada" body="Botão único para entrar no fluxo sem ruído visual." />
+        <FeatureCard title="Torneio" body="Dados de jogo e rating em uma leitura rápida e elegante." />
       </section>
+    </div>
+  );
+}
+
+function Stat({ title, value }: { title: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+      <p className="text-[11px] uppercase tracking-[0.24em] text-ink-soft">{title}</p>
+      <p className="mt-2 font-display text-xl text-ink">{value}</p>
     </div>
   );
 }
 
 function FeatureCard({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-xl bg-bg-card border border-line p-5">
-      <h3 className="font-semibold text-ink">{title}</h3>
-      <p className="text-ink-soft text-sm mt-2">{body}</p>
+    <div className="rounded-3xl border border-white/10 bg-bg-card/80 p-5">
+      <h3 className="font-display text-xl text-ink">{title}</h3>
+      <p className="mt-2 text-sm leading-7 text-ink-soft">{body}</p>
     </div>
   );
 }

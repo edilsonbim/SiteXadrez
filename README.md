@@ -1,6 +1,6 @@
-# Xadrez Lobby
+# Rookary Chess
 
-Lobby de xadrez online com autenticacao Google, partidas contra IA com nivel ajustado ao rating e partidas PvP via matchmaking.
+Xadrez online com autenticacao Google, partidas contra IA com nivel ajustado ao rating e partidas PvP via matchmaking.
 
 ## Stack
 

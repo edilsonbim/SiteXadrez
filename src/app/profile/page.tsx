@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/server/auth";
 import { prisma } from "@/lib/prisma";
@@ -10,6 +11,44 @@ export default async function ProfilePage() {
   if (!session?.user) redirect("/login");
   const me = await prisma.user.findUnique({ where: { id: (session.user as any).id } });
   if (!me) redirect("/login");
+  const isGuest = me.isGuest;
+
+  // Guest: simple landing card explaining the limitations, with a CTA
+  // to register. No rating, no history — those would not persist past
+  // the guest session anyway.
+  if (isGuest) {
+    return (
+      <div className="mx-auto max-w-xl space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Conta temporária ativa</CardTitle>
+            <p className="text-ink-soft text-sm">
+              Seu acesso atual é temporário. As partidas casuais continuam funcionando, mas o histórico não é permanente.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-ink">
+              <b>{me.name}</b> · {me.email}
+            </p>
+            <ul className="text-sm text-ink-soft list-disc pl-5 space-y-1">
+              <li>Partidas contra IA continuam disponíveis.</li>
+              <li>Partidas PVP casuais não atualizam rating.</li>
+              <li>Para histórico completo, crie um perfil permanente.</li>
+            </ul>
+            <div className="flex gap-2 pt-2">
+              <Link href="/register" className="inline-flex h-10 items-center rounded-md bg-accent px-4 text-sm font-medium text-black hover:bg-accent-soft">
+                Criar conta
+              </Link>
+              <Link href="/lobby">
+                <Button variant="secondary">Ir para a mesa</Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const history = await prisma.ratingHistory.findMany({ where: { userId: me.id }, orderBy: { createdAt: "desc" }, take: 25 });
   const recent = await prisma.game.findMany({
     where: { OR: [{ whiteId: me.id }, { blackId: me.id }] },
@@ -38,7 +77,7 @@ export default async function ProfilePage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Ultimas partidas</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Partidas recentes</CardTitle></CardHeader>
         <CardContent>
           {recent.length === 0 && <p className="text-ink-soft text-sm">Sem partidas ainda.</p>}
           <ul className="divide-y divide-line">
@@ -50,7 +89,7 @@ export default async function ProfilePage() {
               return (
                 <li key={g.id} className="py-2 flex items-center justify-between text-sm">
                   <span className="text-ink-soft">{g.mode === "PVE" ? "vs IA" : `vs ${opp?.name ?? "?"}`} ({color})</span>
-                  <span className={won ? "text-good" : draw ? "text-ink-soft" : "text-bad"}>{won ? "vitoria" : draw ? "empate" : "derrota"}</span>
+                  <span className={won ? "text-good" : draw ? "text-ink-soft" : "text-bad"}>{won ? "vitória" : draw ? "empate" : "derrota"}</span>
                   <span className="text-ink-soft">{new Date(g.updatedAt).toLocaleDateString("pt-BR")}</span>
                 </li>
               );
@@ -60,9 +99,9 @@ export default async function ProfilePage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Variacao de rating</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Histórico de rating</CardTitle></CardHeader>
         <CardContent>
-          {history.length === 0 && <p className="text-ink-soft text-sm">Sem historico.</p>}
+          {history.length === 0 && <p className="text-ink-soft text-sm">Sem histórico.</p>}
           <ul className="space-y-1 text-sm font-mono">
             {history.map((h) => (
               <li key={h.id} className="flex justify-between">
@@ -77,7 +116,7 @@ export default async function ProfilePage() {
       </Card>
 
       <div>
-        <Button variant="secondary" onClick={() => location.assign("/lobby")}>Voltar ao lobby</Button>
+        <Link href="/lobby"><Button variant="secondary">Voltar à mesa</Button></Link>
       </div>
     </div>
   );
