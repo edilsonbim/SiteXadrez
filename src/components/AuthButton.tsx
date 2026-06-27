@@ -24,6 +24,7 @@ export function AuthButton() {
     );
   }
   const isGuest = (data.user as any).isGuest === true;
+  const image = typeof data.user.image === "string" ? data.user.image.trim() : "";
   return (
     <div className="flex items-center gap-2">
       {!isGuest && rating !== null && (
@@ -33,8 +34,22 @@ export function AuthButton() {
         <span className="inline-flex items-center gap-1 text-xs text-ink-soft">
           <User className="h-3.5 w-3.5" /> Convidado
         </span>
+      ) : image ? (
+        <img
+          src={image}
+          alt={data.user.name ?? "Jogador"}
+          className="h-7 w-7 rounded-full border border-line object-cover bg-bg"
+          onError={(e) => {
+            const target = e.currentTarget;
+            target.onerror = null;
+            target.src = "";
+            target.style.display = "none";
+          }}
+        />
       ) : (
-        <img src={data.user.image ?? ""} alt="" className="h-7 w-7 rounded-full border border-line" />
+        <span className="grid h-7 w-7 place-items-center rounded-full border border-line bg-bg text-[11px] font-semibold text-ink-soft">
+          {(data.user.name?.[0] ?? "?").toUpperCase()}
+        </span>
       )}
       <button
         className="text-sm text-ink-soft hover:text-ink px-2"

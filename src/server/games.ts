@@ -6,6 +6,7 @@ import { ChessEngine } from "@/lib/chess/engine";
 import { engineForRating } from "@/lib/chess/types";
 import { pickAiMove } from "@/lib/ai/stockfish";
 import { updateRating } from "@/lib/rating/elo";
+import { randomBytes } from "node:crypto";
 
 type ResultKind = "WHITE_WIN" | "BLACK_WIN" | "DRAW";
 
@@ -36,6 +37,64 @@ export async function createPvpGameFor(opts: { whiteId: string; blackId: string;
       status: "IN_PROGRESS",
       whiteId: opts.whiteId,
       blackId: opts.blackId,
+      initialTime: opts.initialTime,
+      increment: opts.increment,
+      whiteTime: opts.initialTime,
+      blackTime: opts.initialTime,
+    },
+  });
+}
+
+const BOT_NAMES = [
+  "Orion Vale",
+  "Lyra Crown",
+  "Mavrik Stone",
+  "Selene Noir",
+  "Cassian Holt",
+  "Ada Mercer",
+  "Viktor Rune",
+  "Noa Voss",
+  "Elara Finch",
+  "Aster Quill",
+  "Iris Vale",
+  "Dorian Crest",
+];
+
+async function ensureBotPlayer(rating: number) {
+  const baseName = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
+  const email = `bot-${baseName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Math.max(1000, Math.round(rating))}@rookary.bot`;
+  return prisma.user.upsert({
+    where: { email },
+    update: {
+      name: baseName,
+      rating: Math.max(800, Math.min(2600, Math.round(rating))),
+      rd: 180,
+      volatility: 0.03,
+      isGuest: false,
+    },
+    create: {
+      email,
+      name: baseName,
+      rating: Math.max(800, Math.min(2600, Math.round(rating))),
+      rd: 180,
+      volatility: 0.03,
+      gamesPlayed: 0,
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      passwordHash: randomBytes(16).toString("hex"),
+    },
+  });
+}
+
+export async function createPvpFallbackAiGame(opts: { userId: string; rating: number; initialTime: number; increment: number }) {
+  const bot = await ensureBotPlayer(opts.rating);
+  return prisma.game.create({
+    data: {
+      mode: "PVP",
+      status: "IN_PROGRESS",
+      whiteId: opts.rating >= bot.rating ? opts.userId : bot.id,
+      blackId: opts.rating >= bot.rating ? bot.id : opts.userId,
       initialTime: opts.initialTime,
       increment: opts.increment,
       whiteTime: opts.initialTime,
@@ -185,4 +244,26 @@ export async function finalizeRating(gameId: string) {
   }
   await Promise.all(updates);
   return { ok: true };
+}
+
+export async function finalizeTimeout(gameId: string, loserSide: "w" | "b") {
+  const game = await prisma.game.findUnique({
+    where: { id: gameId },
+    include: {
+      white: { select: { id: true, rating: true, rd: true, gamesPlayed: true, wins: true, losses: true, draws: true, isGuest: true } },
+      black: { select: { id: true, rating: true, rd: true, gamesPlayed: true, wins: true, losses: true, draws: true, isGuest: true } },
+    },
+  });
+  if (!game || game.status !== "IN_PROGRESS") return null;
+  const winnerSide = loserSide === "w" ? "b" : "w";
+  const updated = await prisma.game.update({
+    where: { id: gameId },
+    data: {
+      status: "FINISHED",
+      result: loserSide === "w" ? "BLACK_WIN" : "WHITE_WIN",
+      winnerId: winnerSide === "w" ? game.whiteId : game.blackId,
+    },
+  });
+  await finalizeRating(updated.id);
+  return updated;
 }

@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Chess } from "chess.js";
 import { Piece } from "./Piece";
+import { Focus } from "lucide-react";
 
 const FILES = ["a","b","c","d","e","f","g","h"];
 
 function squareName(idx: number) { return FILES[idx % 8] + (8 - Math.floor(idx / 8)); }
 function squareIndex(name: string) { return FILES.indexOf(name[0]) + (8 - parseInt(name[1], 10)) * 8; }
 
-export function Board({ fen, side, onMove, disabled }: { fen: string; side: "w" | "b" | "spectator"; onMove: (uci: string) => void; disabled?: boolean }) {
+export function Board({ fen, side, onMove, disabled, pieceStyle = "classic", lastMove, onFullscreen }: { fen: string; side: "w" | "b" | "spectator"; onMove: (uci: string) => void; disabled?: boolean; pieceStyle?: "classic" | "carved" | "metal"; lastMove?: { from: string; to: string } | null; onFullscreen?: () => void }) {
   const chess = useMemo(() => new Chess(fen), [fen]);
   const [selected, setSelected] = useState<number | null>(null);
   const [legalTargets, setLegalTargets] = useState<number[]>([]);
@@ -60,16 +61,26 @@ export function Board({ fen, side, onMove, disabled }: { fen: string; side: "w" 
       <div>
         <div className="rounded-[2rem] p-4 board-frame">
           <div className="rounded-[1.4rem] p-3 board-surface border border-white/10">
-            <div className="mb-2 flex items-center justify-between px-2 text-[10px] uppercase tracking-[0.24em] text-ink-soft">
+            <div className="mb-2 flex items-center justify-between px-2 text-[10px] uppercase tracking-[0.24em] text-ink-soft board-labels">
               <span>Arquivo</span>
-              <span>Turno</span>
+              <button className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2 py-1 text-[10px] hover:text-ink" onClick={onFullscreen} type="button">
+                <Focus className="h-3.5 w-3.5" /> Tela cheia
+              </button>
             </div>
-            <div className="grid grid-cols-8 overflow-hidden rounded-[1.1rem] ring-1 ring-black/35">
+            <div className="board-shell">
+              <div className="board-ranks" aria-hidden="true">
+                {Array.from({ length: 8 }, (_, i) => 8 - i).map((n) => <span key={n} className="leading-none">{n}</span>)}
+              </div>
+              <div className="board-grid-wrap">
+                <div className="grid grid-cols-8 overflow-hidden rounded-[1.1rem] ring-1 ring-black/35 board-grid">
               {orderedIdx.map((idx) => {
                 const isLight = (Math.floor(idx / 8) + (idx % 8)) % 2 === 0;
                 const piece = pieces.find((p) => p.idx === idx)?.sq;
                 const isSelected = selected === idx;
                 const isLegal = legalTargets.includes(idx);
+                const name = squareName(idx);
+                const isLastFrom = lastMove?.from === name;
+                const isLastTo = lastMove?.to === name;
                 return (
                   <button
                     key={idx}
@@ -79,20 +90,21 @@ export function Board({ fen, side, onMove, disabled }: { fen: string; side: "w" 
                       "board-square relative aspect-square flex items-center justify-center transition-all duration-200 hover:brightness-110",
                       isLight ? "square-light" : "square-dark",
                       isSelected ? "square-selected" : "",
+                      isLastFrom ? "square-last-from" : "",
+                      isLastTo ? "square-last-to" : "",
                       isLegal ? "after:absolute after:h-3 after:w-3 after:rounded-full after:bg-accent/70 after:shadow-glow" : "",
                     ].join(" ")}
                     disabled={disabled}
                   >
-                    {piece && <Piece kind={piece.type} color={piece.color} className="piece-appear" />}
-                    {(idx % 8 === 0) && <span className={`absolute left-1 top-0 text-[10px] ${isLight ? "text-black/60" : "text-white/70"}`}>{8 - Math.floor(idx / 8)}</span>}
-                    {(idx < 8) && <span className={`absolute right-1 bottom-0 text-[10px] ${isLight ? "text-black/60" : "text-white/70"}`}>{FILES[idx % 8]}</span>}
+                    {piece && <Piece kind={piece.type} color={piece.color} className="piece-appear" styleName={pieceStyle} />}
                   </button>
                 );
               })}
-            </div>
-            <div className="mt-2 flex items-center justify-between px-2 text-[10px] uppercase tracking-[0.24em] text-ink-soft">
-              <span>Clássico</span>
-              <span>Competições</span>
+                </div>
+              </div>
+              <div className="mt-2 text-[10px] uppercase tracking-[0.24em] text-ink-soft board-files">
+                {FILES.map((f) => <span key={f} className="leading-none">{f}</span>)}
+              </div>
             </div>
           </div>
         </div>

@@ -1,16 +1,26 @@
 import { useId } from "react";
 import type { PieceSymbol, Color } from "chess.js";
 
-type Props = { kind: PieceSymbol; color: Color; className?: string };
+type PieceStyle = "classic" | "carved" | "metal";
+type Props = { kind: PieceSymbol; color: Color; className?: string; styleName?: PieceStyle };
 
-export function Piece({ kind, color, className = "" }: Props) {
-  const path = PATHS[kind];
+const SILHOUETTES: Record<PieceSymbol, string> = {
+  p: "M50 14C56 14 60 19 60 25C60 30 57 34 54 37C57 40 60 45 60 50C60 56 56 61 50 61C44 61 40 56 40 50C40 45 43 40 46 37C43 34 40 30 40 25C40 19 44 14 50 14ZM36 64H64L68 72H32L36 64ZM30 74H70L74 84H26L30 74Z",
+  r: "M31 14H69V22H63V28H58V34H42V28H37V22H31V14ZM35 34H65L63 42H37L35 34ZM33 42H67L65 60H35L33 42ZM29 60H71L75 72H25L29 60ZM25 74H75L79 84H21L25 74Z",
+  n: "M35 22C40 16 48 14 56 16C62 18 67 22 69 28C70 33 68 39 63 44C61 46 58 48 55 50C59 53 61 56 61 61C61 67 57 73 50 76H29L33 66H41C43 58 46 52 51 48C47 45 44 41 43 37C41 32 42 27 45 23C48 19 32 22 35 22Z",
+  b: "M50 13C56 13 60 18 60 24C60 29 57 33 54 37C57 40 59 45 59 50C59 57 56 62 50 66C44 62 41 57 41 50C41 45 43 40 46 37C43 33 40 29 40 24C40 18 44 13 50 13ZM47 21H53V31H47V21ZM35 68H65L69 84H31L35 68Z",
+  q: "M38 15L43 21L50 15L57 21L62 15L66 22L61 30H39L34 22L38 15ZM32 34H68L64 45H36L32 34ZM30 45H70L66 58H34L30 45ZM26 60H74L78 72H22L26 60ZM22 74H78L82 84H18L22 74Z",
+  k: "M45 13H55V20H62V26H55V34C60 38 63 44 63 51C63 61 57 69 50 69C43 69 37 61 37 51C37 44 40 38 45 34V26H38V20H45V13ZM46 13H54V24H46V13ZM34 71H66L71 84H29L34 71Z",
+};
+
+export function Piece({ kind, color, className = "", styleName = "classic" }: Props) {
   const isWhite = color === "w";
   const uid = useId().replace(/:/g, "");
-  const bodyId = `${uid}-${isWhite ? "ivory" : "obsidian"}-body`;
-  const edgeId = `${uid}-${isWhite ? "ivory" : "obsidian"}-edge`;
-  const sheenId = `${uid}-sheen`;
-  const shadowId = `${uid}-shadow`;
+  const bodyId = `${uid}-${styleName}-${isWhite ? "white" : "black"}-body`;
+  const shadeId = `${uid}-${styleName}-${isWhite ? "white" : "black"}-shade`;
+  const edgeId = `${uid}-${styleName}-${isWhite ? "white" : "black"}-edge`;
+  const sheenId = `${uid}-${styleName}-sheen`;
+  const shadowId = `${uid}-${styleName}-shadow`;
 
   return (
     <svg
@@ -20,61 +30,92 @@ export function Piece({ kind, color, className = "" }: Props) {
       role="img"
     >
       <defs>
-        <linearGradient id={bodyId} x1="0%" y1="0%" x2="0%" y2="100%">
-          {isWhite ? (
-            <>
-              <stop offset="0%" stopColor="#fffdf8" />
-              <stop offset="18%" stopColor="#f3e8d0" />
-              <stop offset="52%" stopColor="#d2ba8b" />
-              <stop offset="100%" stopColor="#8c6237" />
-            </>
+        <linearGradient id={bodyId} x1="12%" y1="0%" x2="88%" y2="100%">
+          {styleName === "metal" ? (
+            isWhite ? (
+              <>
+                <stop offset="0%" stopColor="#f8fbff" />
+                <stop offset="34%" stopColor="#d5dfe9" />
+                <stop offset="68%" stopColor="#98a5b3" />
+                <stop offset="100%" stopColor="#586674" />
+              </>
+            ) : (
+              <>
+                <stop offset="0%" stopColor="#d7dce1" />
+                <stop offset="34%" stopColor="#717a84" />
+                <stop offset="68%" stopColor="#232931" />
+                <stop offset="100%" stopColor="#0b0d11" />
+              </>
+            )
+          ) : styleName === "carved" ? (
+            isWhite ? (
+              <>
+                <stop offset="0%" stopColor="#fffdf7" />
+                <stop offset="30%" stopColor="#f1deba" />
+                <stop offset="68%" stopColor="#c28d56" />
+                <stop offset="100%" stopColor="#7b4b27" />
+              </>
+            ) : (
+              <>
+                <stop offset="0%" stopColor="#5b4f46" />
+                <stop offset="32%" stopColor="#2b2521" />
+                <stop offset="68%" stopColor="#14100e" />
+                <stop offset="100%" stopColor="#050404" />
+              </>
+            )
           ) : (
-            <>
-              <stop offset="0%" stopColor="#6b655d" />
-              <stop offset="22%" stopColor="#302c29" />
-              <stop offset="62%" stopColor="#151311" />
-              <stop offset="100%" stopColor="#050505" />
-            </>
+            isWhite ? (
+              <>
+                <stop offset="0%" stopColor="#fffef9" />
+                <stop offset="28%" stopColor="#f2e3c0" />
+                <stop offset="64%" stopColor="#c39a62" />
+                <stop offset="100%" stopColor="#805027" />
+              </>
+            ) : (
+              <>
+                <stop offset="0%" stopColor="#7d746a" />
+                <stop offset="28%" stopColor="#34312f" />
+                <stop offset="66%" stopColor="#141312" />
+                <stop offset="100%" stopColor="#040404" />
+              </>
+            )
           )}
+        </linearGradient>
+        <linearGradient id={shadeId} x1="20%" y1="0%" x2="80%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity={isWhite ? "0.35" : "0.12"} />
+          <stop offset="48%" stopColor="#ffffff" stopOpacity={isWhite ? "0.10" : "0.05"} />
+          <stop offset="100%" stopColor="#000000" stopOpacity="0.24" />
         </linearGradient>
         <linearGradient id={edgeId} x1="0%" y1="0%" x2="100%" y2="100%">
           {isWhite ? (
             <>
-              <stop offset="0%" stopColor="#fff8e8" />
-              <stop offset="100%" stopColor="#5b3a1c" />
+              <stop offset="0%" stopColor="#fff8ea" />
+              <stop offset="100%" stopColor="#6a4524" />
             </>
           ) : (
             <>
-              <stop offset="0%" stopColor="#8c8378" />
+              <stop offset="0%" stopColor="#a7a09a" />
               <stop offset="100%" stopColor="#000000" />
             </>
           )}
         </linearGradient>
-        <radialGradient id={sheenId} cx="45%" cy="20%" r="65%">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.46" />
-          <stop offset="50%" stopColor="#ffffff" stopOpacity="0.10" />
+        <radialGradient id={sheenId} cx="35%" cy="15%" r="70%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.42" />
+          <stop offset="46%" stopColor="#ffffff" stopOpacity="0.10" />
           <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
         </radialGradient>
         <filter id={shadowId} x="-30%" y="-30%" width="160%" height="180%">
           <feDropShadow dx="0" dy="3" stdDeviation="2.5" floodColor="#000" floodOpacity="0.45" />
-          <feDropShadow dx="0" dy="10" stdDeviation="5" floodColor="#000" floodOpacity="0.2" />
+          <feDropShadow dx="0" dy="10" stdDeviation="5.5" floodColor="#000" floodOpacity="0.22" />
         </filter>
       </defs>
 
-      <ellipse cx="50" cy="80" rx="20" ry="6" fill="#000" opacity="0.22" />
+      <ellipse cx="50" cy="81" rx="18" ry="6" fill="#000" opacity="0.24" />
       <g filter={`url(#${shadowId})`} transform="translate(0 1)">
-        <path d={path} fill={`url(#${bodyId})`} stroke={`url(#${edgeId})`} strokeWidth="1.8" strokeLinejoin="round" />
-        <path d={path} fill={`url(#${sheenId})`} stroke="none" transform="translate(-1.2 -1.2)" opacity="0.9" />
+        <path d={SILHOUETTES[kind]} fill={`url(#${bodyId})`} stroke={`url(#${edgeId})`} strokeWidth="1.6" strokeLinejoin="round" />
+        <path d={SILHOUETTES[kind]} fill={`url(#${shadeId})`} stroke="none" transform="translate(0.8 -0.8)" opacity="0.95" />
+        <path d={SILHOUETTES[kind]} fill={`url(#${sheenId})`} stroke="none" transform="translate(-1.2 -1.2)" opacity="0.72" />
       </g>
     </svg>
   );
 }
-
-const PATHS: Record<PieceSymbol, string> = {
-  k: "M50 12L54 20H46L50 12ZM50 22C57 22 62 28 62 36C62 45 56 49 56 58H44C44 49 38 45 38 36C38 28 43 22 50 22ZM36 60H64L68 72H32L36 60ZM30 74H70L74 84H26L30 74Z",
-  q: "M50 12L56 20L50 17L44 20L50 12ZM38 24L42 17L50 24L58 17L62 24L57 33H43L38 24ZM34 36H66L62 52H38L34 36ZM30 56H70L74 66H26L30 56ZM26 70H74L78 84H22L26 70Z",
-  r: "M30 16H70V26H30V16ZM34 26H66L64 36H36L34 26ZM32 36H68L66 58H34L32 36ZM28 58H72L76 70H24L28 58ZM24 72H76L80 84H20L24 72Z",
-  b: "M50 14C56 14 60 20 60 25C60 30 55 34 54 39C53 44 58 48 58 55H42C42 48 47 44 46 39C45 34 40 30 40 25C40 20 44 14 50 14ZM36 58H64L68 70H32L36 58ZM30 72H70L74 84H26L30 72Z",
-  n: "M34 24C40 16 50 14 60 18C66 20 69 26 68 32C67 38 63 40 57 43C54 44 52 47 52 50V58H66L70 70H30L34 58H46V50C46 43 41 40 38 35C35 31 32 28 34 24ZM28 72H72L76 84H24L28 72Z",
-  p: "M50 16C57 16 62 22 62 29C62 35 58 40 53 43C56 46 58 51 58 56H42C42 51 44 46 47 43C42 40 38 35 38 29C38 22 43 16 50 16ZM34 60H66L70 72H30L34 60ZM28 74H72L76 84H24L28 74Z",
-};

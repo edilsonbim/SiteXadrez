@@ -13,6 +13,9 @@ export function LobbyClient({ user }: { user: Me }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [queueing, setQueueing] = useState(false);
+  const [queueJoinedAt, setQueueJoinedAt] = useState<number | null>(null);
+  const [queueFallbackAt, setQueueFallbackAt] = useState<number | null>(null);
+  const [queueElapsed, setQueueElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [matched, setMatched] = useState<string | null>(null);
   const [timeControl, setTimeControl] = useState<5 | 10 | 15>(10);
@@ -36,7 +39,16 @@ export function LobbyClient({ user }: { user: Me }) {
       try {
         const res = await fetch("/api/matchmaking/join", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ initialTime: timeControl * 60, increment: 0 }) });
         const json = await res.json();
-        if (json.matched) { setMatched(json.gameId); router.push(`/game/${json.gameId}?mode=pvp`); return true; }
+        if (json.matched) {
+          setMatched(json.gameId);
+          setQueueing(false);
+          setQueueJoinedAt(null);
+          setQueueFallbackAt(null);
+          router.push(`/game/${json.gameId}?mode=pvp`);
+          return true;
+        }
+        if (json.joinedAt) setQueueJoinedAt(json.joinedAt);
+        if (json.fallbackAt) setQueueFallbackAt(json.fallbackAt);
         return false;
       } catch { return false; }
     };
@@ -47,6 +59,15 @@ export function LobbyClient({ user }: { user: Me }) {
       if (ok) clearInterval(interval);
     }, 3000);
   }
+
+  useEffect(() => {
+    if (!queueing || !queueJoinedAt) return;
+    setQueueElapsed(Math.max(0, Math.floor((Date.now() - queueJoinedAt) / 1000)));
+    const timer = setInterval(() => {
+      setQueueElapsed(Math.max(0, Math.floor((Date.now() - queueJoinedAt) / 1000)));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [queueing, queueJoinedAt]);
 
   useEffect(() => () => { if (queueing) fetch("/api/matchmaking/leave", { method: "POST" }); }, [queueing]);
 
@@ -85,6 +106,15 @@ export function LobbyClient({ user }: { user: Me }) {
             <h3 className="font-display text-xl text-ink">Mesa PvP</h3>
             <p className="text-sm text-ink-soft">Matchmaking por rating com janela progressiva. Tempo {timeControl} min.</p>
             <Button onClick={joinQueue} variant="secondary" disabled={queueing}>{queueing ? "Procurando..." : "Entrar na fila"}</Button>
+            {queueing && (
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-ink-soft space-y-1">
+                <p className="text-ink">Você está na fila</p>
+                <p>Tempo aguardando: {queueElapsed}s</p>
+                {queueFallbackAt && (
+                  <p>Fallback para IA em até {Math.max(0, Math.ceil((queueFallbackAt - Date.now()) / 1000))}s</p>
+                )}
+              </div>
+            )}
           </div>
           </div>
         </CardContent>

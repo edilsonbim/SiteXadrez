@@ -69,7 +69,11 @@ html::before {
     linear-gradient(180deg, #9a6d3f 0%, #6d4824 100%);
 }
 .square-highlight { box-shadow: inset 0 0 0 3px #d8b46a; }
-.square-last-move { box-shadow: inset 0 0 0 3px rgba(240,213,154,.75); }
+.square-last-move,
+.square-last-from { box-shadow: inset 0 0 0 3px rgba(245,176,65,.62); }
+.square-last-to {
+  box-shadow: inset 0 0 0 3px rgba(75,209,139,.72);
+}
 .square-selected { box-shadow: inset 0 0 0 3px #4bd18b; }
 
 .piece {
@@ -90,6 +94,91 @@ html::before {
 .board-square:hover {
   transform: scale(1.015);
   filter: brightness(1.05);
+}
+
+.board-grid {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  max-width: 100%;
+}
+
+.board-shell {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.board-grid-wrap {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.board-ranks {
+  grid-column: 1;
+  grid-row: 2;
+  display: grid;
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+  justify-items: center;
+  align-items: center;
+  padding: 10px 0;
+  text-align: center;
+  font-size: 10px;
+  color: rgba(242,239,232,0.65);
+  user-select: none;
+}
+
+.board-files {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  justify-items: center;
+  align-items: center;
+  padding-left: 28px;
+  padding-right: 4px;
+}
+
+.board-labels {
+  padding-left: 28px;
+}
+
+.board-shell:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.board-shell:fullscreen .board-grid-wrap {
+  height: 100%;
+}
+
+.board-shell:fullscreen .board-grid {
+  width: min(92vmin, calc(100vw - 96px));
+  height: min(92vmin, calc(100vh - 160px));
+  justify-self: center;
+  align-self: center;
+}
+
+.board-shell:fullscreen .board-ranks {
+  height: min(92vmin, calc(100vh - 160px));
+}
+
+.board-shell:fullscreen .board-files {
+  width: min(92vmin, calc(100vw - 96px));
+  justify-self: center;
+}
+
+.board-shell:fullscreen .board-labels {
+  padding-left: 0;
+}
+
+@media (max-width: 768px) {
+  .board-grid {
+    width: 100%;
+  }
 }
 
 .enter-rise {
