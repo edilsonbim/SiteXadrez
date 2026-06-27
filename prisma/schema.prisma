@@ -1,0 +1,142 @@
+// Prisma schema - SQLite default; swap provider for Postgres in prod.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---- Users ----
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  rating        Int       @default(1200)
+  rd            Float     @default(350.0)
+  volatility    Float     @default(0.06)
+  gamesPlayed   Int       @default(0)
+  wins          Int       @default(0)
+  losses        Int       @default(0)
+  draws         Int       @default(0)
+
+  accounts        Account[]
+  sessions        Session[]
+  whiteGames      Game[]   @relation("WhitePlayer")
+  blackGames      Game[]   @relation("BlackPlayer")
+  winnerGames     Game[]   @relation("Winner")
+  ratingHistory   RatingHistory[]
+  moves           Move[]   @relation("MoveBy")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([rating])
+}
+
+// ---- NextAuth tables ----
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+// ---- Games ----
+// mode values: 'PVP' | 'PVE'
+// status values: 'WAITING' | 'IN_PROGRESS' | 'FINISHED' | 'ABANDONED'
+// result values: 'WHITE_WIN' | 'BLACK_WIN' | 'DRAW' | 'ONGOING'
+model Game {
+  id          String   @id @default(cuid())
+  mode        String
+  status      String   @default("WAITING")
+  result      String   @default("ONGOING")
+  whiteId     String?
+  blackId     String?
+  winnerId    String?
+  initialTime Int      @default(600)
+  increment   Int      @default(0)
+  fen         String   @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+  pgn         String   @default("")
+  whiteTime   Int      @default(600)
+  blackTime   Int      @default(600)
+  aiLevel     Int      @default(10)
+  drawOffer   String   @default("none")
+  moveCount   Int      @default(0)
+
+  white    User? @relation("WhitePlayer", fields: [whiteId], references: [id])
+  black    User? @relation("BlackPlayer", fields: [blackId], references: [id])
+  winner   User? @relation("Winner",      fields: [winnerId], references: [id])
+  moves    Move[]
+  ratings  RatingHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([mode])
+}
+
+model Move {
+  id         String   @id @default(cuid())
+  gameId     String
+  byUserId   String?
+  ply        Int
+  san        String
+  uci        String
+  fenAfter   String
+  whiteTime  Int
+  blackTime  Int
+  createdAt  DateTime @default(now())
+
+  game   Game  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  byUser User? @relation("MoveBy", fields: [byUserId], references: [id])
+
+  @@index([gameId, ply])
+}
+
+model RatingHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  gameId    String?
+  rating    Int
+  rd        Float
+  delta     Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game? @relation(fields: [gameId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+}

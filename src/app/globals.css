@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+html, body { background: #0b0d10; color: #e6edf3; }
+body { font-family: Inter, system-ui, "Segoe UI", Roboto, sans-serif; }
+
+::selection { background: rgba(245, 176, 65, 0.35); }
+
+/* chessboard squares */
+.square-light { background: #ead7b4; }
+.square-dark  { background: #a37444; }
+.square-highlight { box-shadow: inset 0 0 0 3px #f5b041; }
+.square-last-move { box-shadow: inset 0 0 0 3px rgba(245,176,65,.65); }
+.square-selected { box-shadow: inset 0 0 0 3px #3fb950; }
+
+.piece { user-select: none; cursor: grab; }
+.piece.dragging { opacity: 0.35; }
