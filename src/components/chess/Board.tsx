@@ -62,10 +62,11 @@ export function Board({ fen, side, onMove, disabled, pieceStyle = "classic", las
         <div className="rounded-[2rem] p-4 board-frame">
           <div className="rounded-[1.4rem] p-3 board-surface border border-white/10">
             <div className="board-topbar mb-2 px-2">
+              <span className="board-top-spacer" aria-hidden="true" />
               <div className="board-files board-files--top text-[10px] uppercase tracking-[0.24em] text-ink-soft">
                 {orderedFiles.map((f) => <span key={f} className="leading-none">{f}</span>)}
               </div>
-              <button className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2 py-1 text-[10px] hover:text-ink" onClick={onFullscreen} type="button">
+              <button className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2 py-1 text-[10px] hover:text-ink justify-self-end" onClick={onFullscreen} type="button">
                 <Focus className="h-3.5 w-3.5" /> Tela cheia
               </button>
             </div>
