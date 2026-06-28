@@ -13,6 +13,8 @@ export interface RatingInputs {
   score: number; // 1 win, 0.5 draw, 0 loss
 }
 
+export type RatingOutcome = "win" | "loss" | "draw";
+
 export interface RatingUpdate {
   rating: number;
   rd: number;
@@ -32,6 +34,17 @@ export function updateRating(input: RatingInputs): RatingUpdate {
   const k = kFactor(input.selfGames);
   const delta = Math.round(k * (input.score - e));
   // RD decays slowly with each game; clamp to [30, 350]
+  const rd = Math.min(350, Math.max(30, input.selfRd * 0.97 + 8));
+  return { rating: input.selfRating + delta, rd, delta };
+}
+
+export function updateRatingForOutcome(input: Omit<RatingInputs, "score"> & { outcome: RatingOutcome }): RatingUpdate {
+  const e = expectedScore(input.selfRating, input.oppRating);
+  const k = kFactor(input.selfGames);
+  const winDelta = Math.max(1, Math.round(k * (1 - e)));
+  const lossDelta = -Math.max(1, Math.round(k * e));
+  const drawDelta = Math.max(1, Math.round(winDelta / 2));
+  const delta = input.outcome === "win" ? winDelta : input.outcome === "loss" ? lossDelta : drawDelta;
   const rd = Math.min(350, Math.max(30, input.selfRd * 0.97 + 8));
   return { rating: input.selfRating + delta, rd, delta };
 }

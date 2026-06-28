@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ensureDemoPlayers } from "@/server/demo-players";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    await ensureDemoPlayers();
     const top = await prisma.user.findMany({
       where: { isGuest: false },
       orderBy: [{ rating: "desc" }],

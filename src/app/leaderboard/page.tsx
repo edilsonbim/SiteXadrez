@@ -1,12 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { RatingBadge } from "@/components/ui/RatingBadge";
-import { ensureDemoPlayers } from "@/server/demo-players";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeaderboardPage() {
-  await ensureDemoPlayers();
   const top = await prisma.user.findMany({
     where: { isGuest: false },
     orderBy: [{ rating: "desc" }],

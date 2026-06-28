@@ -10,6 +10,7 @@ import { io, Socket } from "socket.io-client";
 import { MoveList } from "@/components/chess/MoveList";
 import { GameClock } from "@/components/chess/GameClock";
 import { Crown, Landmark, Medal, Skull, Handshake, Flag } from "lucide-react";
+import Link from "next/link";
 
 interface Me { id: string; name: string; image: string | null }
 
@@ -281,7 +282,7 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
           </div>
         </CardContent>
       </Card>
-      {finished && <ResultOverlay result={result} />}
+      {finished && <ResultOverlay result={result} playerSide={side} />}
       {promotion && (
         <PromotionModal
           side={promotion.side}
@@ -399,10 +400,16 @@ function MiniStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ResultOverlay({ result }: { result: "WHITE_WIN" | "BLACK_WIN" | "DRAW" }) {
+function ResultOverlay({ result, playerSide }: { result: "WHITE_WIN" | "BLACK_WIN" | "DRAW"; playerSide: "w" | "b" | "spectator" }) {
   const title = result === "DRAW" ? "Empate" : result === "WHITE_WIN" ? "Vitória das brancas" : "Vitória das pretas";
   const subtitle = result === "DRAW" ? "Partida equilibrada até o fim." : result === "WHITE_WIN" ? "Brancas vencem." : "Pretas vencem.";
   const Icon = result === "DRAW" ? Handshake : result === "WHITE_WIN" ? Medal : Skull;
+  const playerWon =
+    playerSide !== "spectator" &&
+    ((playerSide === "w" && result === "WHITE_WIN") || (playerSide === "b" && result === "BLACK_WIN"));
+  const playerLost =
+    playerSide !== "spectator" &&
+    ((playerSide === "w" && result === "BLACK_WIN") || (playerSide === "b" && result === "WHITE_WIN"));
   const tone =
     result === "DRAW"
       ? {
@@ -410,17 +417,29 @@ function ResultOverlay({ result }: { result: "WHITE_WIN" | "BLACK_WIN" | "DRAW" 
           icon: "text-ink-soft",
           accent: "text-ink",
         }
-      : result === "WHITE_WIN"
+      : playerWon
         ? {
             shell: "border-emerald-300/35 bg-emerald-950/85",
             icon: "text-emerald-300",
             accent: "text-emerald-200",
           }
-        : {
+        : playerLost
+          ? {
             shell: "border-rose-300/35 bg-rose-950/85",
             icon: "text-rose-300",
             accent: "text-rose-200",
-          };
+            }
+          : result === "WHITE_WIN"
+            ? {
+                shell: "border-emerald-300/35 bg-emerald-950/85",
+                icon: "text-emerald-300",
+                accent: "text-emerald-200",
+              }
+            : {
+                shell: "border-rose-300/35 bg-rose-950/85",
+                icon: "text-rose-300",
+                accent: "text-rose-200",
+              };
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/75 backdrop-blur-sm animate-fade-in">
       <div className={`w-[min(92vw,520px)] rounded-[2rem] border p-8 text-center shadow-2xl ${tone.shell}`}>
@@ -429,6 +448,11 @@ function ResultOverlay({ result }: { result: "WHITE_WIN" | "BLACK_WIN" | "DRAW" 
         </div>
         <h2 className={`font-display text-3xl ${tone.accent}`}>{title}</h2>
         <p className="mt-2 text-sm text-ink-soft">{subtitle}</p>
+        <div className="mt-6">
+          <Link href="/lobby">
+            <Button variant="secondary">Continuar</Button>
+          </Link>
+        </div>
       </div>
     </div>
   );
