@@ -9,6 +9,7 @@ import { updatePvpRatingByRule, updateRatingForOutcome } from "@/lib/rating/elo"
 
 type ResultKind = "WHITE_WIN" | "BLACK_WIN" | "DRAW";
 type ClockState = { whiteTime: number; blackTime: number; expiredSide: "w" | "b" | null };
+type ActiveGameLookup = { id: string; mode: string } | null;
 
 export function getClockState(game: { fen: string; whiteTime: number; blackTime: number; updatedAt: Date }): ClockState {
   const turn = game.fen.split(" ")[1] === "b" ? "b" : "w";
@@ -234,6 +235,35 @@ export async function finalizeRating(gameId: string) {
 
 export async function finalizeTimeout(gameId: string, loserSide: "w" | "b") {
   return finishByTimeout(gameId, loserSide);
+}
+
+export async function getActiveGameForUser(userId: string): Promise<ActiveGameLookup> {
+  const candidate = await prisma.game.findFirst({
+    where: {
+      status: "IN_PROGRESS",
+      OR: [{ whiteId: userId }, { blackId: userId }],
+    },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      mode: true,
+      status: true,
+      fen: true,
+      whiteTime: true,
+      blackTime: true,
+      updatedAt: true,
+    },
+  });
+
+  if (!candidate) return null;
+
+  const clockState = getClockState(candidate);
+  if (clockState.expiredSide) {
+    await finalizeTimeout(candidate.id, clockState.expiredSide);
+    return null;
+  }
+
+  return { id: candidate.id, mode: candidate.mode };
 }
 
 export async function resignGame(opts: { gameId: string; userId: string | null }) {

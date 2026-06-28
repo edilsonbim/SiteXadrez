@@ -35,6 +35,7 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
   const socketRef = useRef<Socket | null>(null);
   const boardShellRef = useRef<HTMLDivElement | null>(null);
   const autoAiMoveRef = useRef(false);
+  const syncInFlightRef = useRef(false);
 
   const chess = useMemo(() => new Chess(fen), [fen]);
   const turn = chess.turn();
@@ -45,22 +46,50 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
   })() : null;
   const finished = result !== "ONGOING";
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/games/${gameId}`).then((r) => r.json()).then((j) => {
-      if (cancelled || !j.game) return;
-      setFen(j.game.fen); setPgn(j.game.pgn); setResult(j.game.result);
-      setWhite(j.game.white); setBlack(j.game.black); setMoves(j.game.moves);
-      setWhiteTime(j.game.whiteTime); setBlackTime(j.game.blackTime);
+  async function syncGameState() {
+    if (syncInFlightRef.current) return;
+    syncInFlightRef.current = true;
+    try {
+      const res = await fetch(`/api/games/${gameId}`, { cache: "no-store" });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.game) return;
+      setFen(j.game.fen);
+      setPgn(j.game.pgn);
+      setResult(j.game.result);
+      setWhite(j.game.white);
+      setBlack(j.game.black);
+      setMoves(j.game.moves);
+      setWhiteTime(j.game.whiteTime);
+      setBlackTime(j.game.blackTime);
       setMode(j.game.mode);
       setConnectionNote("Conectado");
       if (j.game.whiteId === me.id) setSide("w");
       else if (j.game.blackId === me.id) setSide("b");
       else setSide("spectator");
       autoAiMoveRef.current = false;
-    });
-    return () => { cancelled = true; };
+    } finally {
+      syncInFlightRef.current = false;
+    }
+  }
+
+  useEffect(() => {
+    void syncGameState();
   }, [gameId, me.id]);
+
+  useEffect(() => {
+    if (finished) return;
+    const syncTimer = setInterval(() => {
+      void syncGameState();
+    }, 5000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void syncGameState();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(syncTimer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [finished]);
 
   useEffect(() => {
     if (mode !== "PVE" || result !== "ONGOING") return;
@@ -95,11 +124,15 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
       reconnectionDelayMax: 3000,
     });
     socketRef.current = s;
-    s.on("connect", () => setConnectionNote("Conectado"));
+    s.on("connect", () => {
+      setConnectionNote("Conectado");
+      void syncGameState();
+    });
     s.on("disconnect", () => setConnectionNote("Reconectando..."));
     s.on("reconnect", () => {
-      setConnectionNote("Conectado");
+      setConnectionNote("Sincronizando...");
       s.emit("join", { gameId });
+      void syncGameState();
     });
     s.emit("join", { gameId });
     s.on("move", (payload: any) => {
@@ -110,18 +143,6 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
     });
     return () => { s.emit("leave", { gameId }); s.disconnect(); };
   }, [gameId, mode]);
-
-  useEffect(() => {
-    if (result !== "ONGOING") return;
-    const timeoutSide = whiteTime <= 0 ? "w" : blackTime <= 0 ? "b" : null;
-    if (!timeoutSide) return;
-    setResult(timeoutSide === "w" ? "BLACK_WIN" : "WHITE_WIN");
-    fetch(`/api/games/${gameId}/finalize`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ timeoutSide }),
-    });
-  }, [blackTime, gameId, result, whiteTime]);
 
   async function sendMove(uci: string) {
     const res = await fetch(`/api/games/${gameId}/move`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ uci }) });
