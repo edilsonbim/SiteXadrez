@@ -1,16 +1,11 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getLeaderboardPlayers } from "@/server/leaderboard";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const top = await prisma.user.findMany({
-      where: { isGuest: false },
-      orderBy: [{ rating: "desc" }],
-      take: 25,
-      select: { id: true, name: true, image: true, rating: true, gamesPlayed: true, wins: true, losses: true, draws: true },
-    });
+    const top = await getLeaderboardPlayers(25);
     return NextResponse.json({ players: top });
   } catch {
     return NextResponse.json({ players: [] });
