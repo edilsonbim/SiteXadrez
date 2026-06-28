@@ -30,7 +30,6 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
   const [mode, setMode] = useState<"PVP" | "PVE">("PVE");
   const [aiThinking, setAiThinking] = useState(false);
   const [theme, setTheme] = useState<"classic" | "arena">("classic");
-  const [pieceStyle, setPieceStyle] = useState<"classic" | "carved" | "metal">("classic");
   const [connectionNote, setConnectionNote] = useState<string>("Conectando...");
   const [promotion, setPromotion] = useState<{ from: string; to: string; side: "w" | "b" } | null>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -124,34 +123,6 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
     });
   }, [blackTime, gameId, result, whiteTime]);
 
-  async function reconnect() {
-    setConnectionNote("Reconectando...");
-    const res = await fetch(`/api/games/${gameId}`);
-    if (!res.ok) {
-      setConnectionNote("Falha ao reconectar");
-      return;
-    }
-    const json = await res.json();
-    if (!json.game) {
-      setConnectionNote("Partida indisponível");
-      return;
-    }
-    setFen(json.game.fen);
-    setPgn(json.game.pgn);
-    setResult(json.game.result);
-    setWhite(json.game.white);
-    setBlack(json.game.black);
-    setMoves(json.game.moves);
-    setWhiteTime(json.game.whiteTime);
-    setBlackTime(json.game.blackTime);
-    setMode(json.game.mode);
-    if (socketRef.current) {
-      socketRef.current.emit("leave", { gameId });
-      socketRef.current.emit("join", { gameId });
-    }
-    setConnectionNote("Conectado");
-  }
-
   async function sendMove(uci: string) {
     const res = await fetch(`/api/games/${gameId}/move`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ uci }) });
     const json = await res.json();
@@ -204,7 +175,6 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
           <div className="flex items-center gap-3">
             {side !== "spectator" && <span className="text-xs text-ink-soft">Você joga de {side === "w" ? "brancas" : "pretas"}</span>}
             <span className="text-xs text-ink-soft">{connectionNote}</span>
-            {!finished && <Button variant="secondary" size="sm" onClick={reconnect}>Reconectar</Button>}
           </div>
         </CardHeader>
         <CardContent className="p-4 md:p-5">
@@ -231,10 +201,6 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
             >
               <Crown className="h-4 w-4" />
             </Button>
-            <span className="mx-1 h-6 w-px bg-white/10" />
-            <Button type="button" variant={pieceStyle === "classic" ? "primary" : "ghost"} size="sm" onClick={() => setPieceStyle("classic")}>Clássico</Button>
-            <Button type="button" variant={pieceStyle === "carved" ? "primary" : "ghost"} size="sm" onClick={() => setPieceStyle("carved")}>Talhado</Button>
-            <Button type="button" variant={pieceStyle === "metal" ? "primary" : "ghost"} size="sm" onClick={() => setPieceStyle("metal")}>Metal</Button>
           </div>
           <div className="grid gap-4 xl:grid-cols-[180px_minmax(0,1fr)_180px] xl:items-start">
             <SideHud label="Preta" player={black} active={turn === "b" && result === "ONGOING"} />
@@ -254,7 +220,6 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
                   orientation={boardOrientation}
                   onMove={(move) => commitMove(move)}
                   disabled={result !== "ONGOING" || side === "spectator" || turn !== side || aiThinking}
-                  pieceStyle={pieceStyle}
                   lastMove={lastMove}
                   onFullscreen={() => {
                     const el = boardShellRef.current;

@@ -10,7 +10,7 @@ const FILES = ["a","b","c","d","e","f","g","h"];
 function squareName(idx: number) { return FILES[idx % 8] + (8 - Math.floor(idx / 8)); }
 function squareIndex(name: string) { return FILES.indexOf(name[0]) + (8 - parseInt(name[1], 10)) * 8; }
 
-export function Board({ fen, side, orientation = "w", onMove, disabled, pieceStyle = "classic", lastMove, onFullscreen }: { fen: string; side: "w" | "b" | "spectator"; orientation?: "w" | "b"; onMove: (move: { from: string; to: string }) => void; disabled?: boolean; pieceStyle?: "classic" | "carved" | "metal"; lastMove?: { from: string; to: string } | null; onFullscreen?: () => void }) {
+export function Board({ fen, side, orientation = "w", onMove, disabled, lastMove, onFullscreen }: { fen: string; side: "w" | "b" | "spectator"; orientation?: "w" | "b"; onMove: (move: { from: string; to: string }) => void; disabled?: boolean; lastMove?: { from: string; to: string } | null; onFullscreen?: () => void }) {
   const chess = useMemo(() => new Chess(fen), [fen]);
   const [selected, setSelected] = useState<number | null>(null);
   const [legalTargets, setLegalTargets] = useState<number[]>([]);
@@ -53,24 +53,10 @@ export function Board({ fen, side, orientation = "w", onMove, disabled, pieceSty
   const orderedFiles = flipped ? [...FILES].reverse() : FILES;
 
   return (
-    <div className="grid gap-3 xl:grid-cols-[auto_1fr] items-start">
-      <div className="flex flex-col justify-between text-xs text-ink-soft py-2 select-none">
-        {Array.from({ length: 8 }, (_, i) => 8 - i).map((n) => <span key={n}>{n}</span>)}
-      </div>
-      <div>
+    <div>
         <div className="rounded-[2rem] p-4 board-frame">
           <div className="rounded-[1.4rem] p-3 board-surface border border-white/10">
             <div className="board-shell">
-              <div className="board-topbar px-2">
-                <span className="board-top-spacer" aria-hidden="true" />
-                <div className="board-files board-files--top text-[10px] uppercase tracking-[0.24em] text-ink-soft">
-                  {orderedFiles.map((f) => <span key={f} className="leading-none">{f}</span>)}
-                </div>
-                <span aria-hidden="true" />
-              </div>
-              <div className="board-ranks" aria-hidden="true">
-                {Array.from({ length: 8 }, (_, i) => 8 - i).map((n) => <span key={n} className="leading-none">{n}</span>)}
-              </div>
               <div className="board-grid-wrap">
                 <div className="grid grid-cols-8 overflow-hidden rounded-[1.1rem] ring-1 ring-black/35 board-grid">
               {orderedIdx.map((idx) => {
@@ -96,11 +82,14 @@ export function Board({ fen, side, orientation = "w", onMove, disabled, pieceSty
                     ].join(" ")}
                     disabled={disabled}
                   >
-                    {piece && <Piece kind={piece.type} color={piece.color} className="piece-appear" styleName={pieceStyle} />}
+                    {piece && <Piece kind={piece.type} color={piece.color} className="piece-appear" />}
                   </button>
                 );
               })}
                 </div>
+              </div>
+              <div className="board-files board-files--bottom px-1 text-[10px] uppercase tracking-[0.24em] text-ink-soft" aria-hidden="true">
+                {orderedFiles.map((f) => <span key={f} className="leading-none">{f}</span>)}
               </div>
               <div className="board-bottombar">
                 <button className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2 py-1 text-[10px] hover:text-ink" onClick={onFullscreen} type="button">
@@ -110,8 +99,6 @@ export function Board({ fen, side, orientation = "w", onMove, disabled, pieceSty
             </div>
           </div>
         </div>
-        <div className="text-xs text-ink-soft mt-2">O tabuleiro gira automaticamente conforme sua cor.</div>
-      </div>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 import type { PieceSymbol, Color } from "chess.js";
 
-type PieceStyle = "classic" | "carved" | "metal";
-type Props = { kind: PieceSymbol; color: Color; className?: string; styleName?: PieceStyle };
+type Props = { kind: PieceSymbol; color: Color; className?: string };
 
 const PIECE_SRC: Record<`${Color}-${PieceSymbol}`, string> = {
   "b-b": "/chess/pieces/black-bishop.png?v=3",
@@ -18,7 +17,7 @@ const PIECE_SRC: Record<`${Color}-${PieceSymbol}`, string> = {
   "w-r": "/chess/pieces/white-rook.png?v=3",
 } as const;
 
-export function Piece({ kind, color, className = "", styleName = "classic" }: Props) {
+export function Piece({ kind, color, className = "" }: Props) {
   const src = PIECE_SRC[`${color}-${kind}`];
   const isWhite = color === "w";
 
@@ -30,7 +29,6 @@ export function Piece({ kind, color, className = "", styleName = "classic" }: Pr
       alt=""
       className={[
         "piece piece-image",
-        `piece-image--${styleName}`,
         isWhite ? "piece-image--white" : "",
         className,
       ].join(" ")}
