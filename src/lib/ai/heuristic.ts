@@ -20,6 +20,21 @@ export interface AiMoveResponse {
 import { Chess } from "chess.js";
 
 const PIECE_VALUE: Record<string, number> = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+const CENTER_BONUS = new Set(["d4", "e4", "d5", "e5"]);
+const EXTENDED_CENTER = new Set([
+  "c3", "d3", "e3", "f3",
+  "c4", "d4", "e4", "f4",
+  "c5", "d5", "e5", "f5",
+  "c6", "d6", "e6", "f6",
+]);
+const PIECE_SQUARE_BONUS: Record<string, number> = {
+  p: 8,
+  n: 14,
+  b: 12,
+  r: 6,
+  q: 4,
+  k: 0,
+};
 
 function materialScore(chess: Chess): number {
   let s = 0;
@@ -34,18 +49,54 @@ function materialScore(chess: Chess): number {
   return s;
 }
 
+function positionalScore(chess: Chess): number {
+  let s = 0;
+  const board = chess.board();
+  for (let rank = 0; rank < board.length; rank += 1) {
+    for (let file = 0; file < board[rank].length; file += 1) {
+      const sq = board[rank]?.[file];
+      if (!sq) continue;
+      const square = `${String.fromCharCode(97 + file)}${8 - rank}`;
+      let bonus = 0;
+      if (CENTER_BONUS.has(square)) bonus += 18;
+      else if (EXTENDED_CENTER.has(square)) bonus += 8;
+      bonus += PIECE_SQUARE_BONUS[sq.type] ?? 0;
+      if (sq.type === "p") {
+        const advance = sq.color === "w" ? 6 - rank : rank - 1;
+        bonus += Math.max(0, advance) * 3;
+      }
+      s += sq.color === "w" ? bonus : -bonus;
+    }
+  }
+  return s;
+}
+
+function evaluate(chess: Chess): number {
+  const activity = chess.moves().length * 2;
+  const signedActivity = chess.turn() === "w" ? activity : -activity;
+  return materialScore(chess) + positionalScore(chess) + signedActivity;
+}
+
 function orderedMoves(chess: Chess) {
   const moves = chess.moves({ verbose: true }) as any[];
   return moves.sort((a, b) => {
-    const ca = a.captured ? PIECE_VALUE[a.captured] - PIECE_VALUE[a.piece] / 10 : 0;
-    const cb = b.captured ? PIECE_VALUE[b.captured] - PIECE_VALUE[b.piece] / 10 : 0;
+    const ca =
+      (a.captured ? PIECE_VALUE[a.captured] - PIECE_VALUE[a.piece] / 10 : 0) +
+      (a.isPromotion ? 800 : 0) +
+      (a.san?.includes("+") ? 40 : 0) +
+      (CENTER_BONUS.has(a.to) ? 25 : EXTENDED_CENTER.has(a.to) ? 10 : 0);
+    const cb =
+      (b.captured ? PIECE_VALUE[b.captured] - PIECE_VALUE[b.piece] / 10 : 0) +
+      (b.isPromotion ? 800 : 0) +
+      (b.san?.includes("+") ? 40 : 0) +
+      (CENTER_BONUS.has(b.to) ? 25 : EXTENDED_CENTER.has(b.to) ? 10 : 0);
     return cb - ca;
   });
 }
 
 function alphaBeta(chess: Chess, depth: number, alpha: number, beta: number, sign: 1 | -1): number {
   if (depth === 0 || chess.isGameOver()) {
-    let s = materialScore(chess);
+    let s = evaluate(chess);
     if (chess.isCheckmate()) s = sign === 1 ? -99999 : 99999;
     if (chess.isDraw() || chess.isStalemate()) s = 0;
     return sign * s;
@@ -100,7 +151,16 @@ export function pickHeuristicMove(fen: string, level: EngineLevel): AiMoveRespon
     }
   }
 
-  const chosen = pickRandom && bestMoves.length > 1 ? bestMoves[Math.floor(Math.random() * bestMoves.length)] : bestMoves[0];
+  const threshold = Math.max(6, Math.floor(level.randomness / 12));
+  const candidateMoves = moves.filter((m) => {
+    chess.move({ from: m.from, to: m.to, promotion: m.promotion });
+    const score = alphaBeta(chess, depth - 1, -Infinity, Infinity, (-sign) as (1 | -1));
+    chess.undo();
+    return Math.abs(score - bestScore) <= threshold;
+  });
+
+  const pool = candidateMoves.length > 0 ? candidateMoves : bestMoves;
+  const chosen = pickRandom && pool.length > 1 ? pool[Math.floor(Math.random() * pool.length)] : pool[0];
   return {
     uci: chosen.from + chosen.to + (chosen.promotion ?? ""),
     san: chosen.san,

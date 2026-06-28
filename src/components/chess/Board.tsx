@@ -51,13 +51,18 @@ export function Board({ fen, side, orientation = "w", onMove, disabled, lastMove
   const flipped = orientation === "b";
   const orderedIdx = flipped ? [...Array(64).keys()].reverse() : [...Array(64).keys()];
   const orderedFiles = flipped ? [...FILES].reverse() : FILES;
+  const orderedRanks = flipped ? [1, 2, 3, 4, 5, 6, 7, 8] : [8, 7, 6, 5, 4, 3, 2, 1];
 
   return (
     <div>
         <div className="rounded-[2rem] p-4 board-frame">
           <div className="rounded-[1.4rem] p-3 board-surface border border-white/10">
             <div className="board-shell">
-              <div className="board-grid-wrap">
+              <div className="board-main">
+                <div className="board-ranks" aria-hidden="true">
+                  {orderedRanks.map((rank) => <span key={rank} className="leading-none">{rank}</span>)}
+                </div>
+                <div className="board-grid-wrap">
                 <div className="grid grid-cols-8 overflow-hidden rounded-[1.1rem] ring-1 ring-black/35 board-grid">
               {orderedIdx.map((idx) => {
                 const isLight = (Math.floor(idx / 8) + (idx % 8)) % 2 === 0;
@@ -87,6 +92,7 @@ export function Board({ fen, side, orientation = "w", onMove, disabled, lastMove
                 );
               })}
                 </div>
+              </div>
               </div>
               <div className="board-files board-files--bottom px-1 text-[10px] uppercase tracking-[0.24em] text-ink-soft" aria-hidden="true">
                 {orderedFiles.map((f) => <span key={f} className="leading-none">{f}</span>)}

@@ -152,8 +152,9 @@ export async function playAiMove(opts: { gameId: string }) {
     await finishByTimeout(game.id, clockState.expiredSide);
     return { ok: false, reason: "timeout" as const };
   }
-  if (!game.whiteId) return { ok: false, reason: "no_user" as const };
-  const user = await prisma.user.findUnique({ where: { id: game.whiteId } });
+  const humanUserId = game.whiteId ?? game.blackId;
+  if (!humanUserId) return { ok: false, reason: "no_user" as const };
+  const user = await prisma.user.findUnique({ where: { id: humanUserId } });
   if (!user) return { ok: false, reason: "no_user" as const };
   const level = engineForRating(user.rating);
   const ply = (game.moveCount ?? 0) + 1;
