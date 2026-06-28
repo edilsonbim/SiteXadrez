@@ -25,7 +25,7 @@ Fluxo recomendado para producao do Rookary:
 2. Crie um banco no Neon e use a `DATABASE_URL` fornecida por ele.
 3. Configure as envs no painel da Vercel:
    - `DATABASE_URL`
-   - `NEXTAUTH_URL`
+   - `NEXTAUTH_URL` = URL publica do deploy, por exemplo `https://seu-app.vercel.app`
    - `NEXTAUTH_SECRET`
    - `AUTH_SECRET`
    - `AUTH_GOOGLE_ID`
@@ -42,6 +42,12 @@ Importante:
 - O app Next.js roda muito bem na Vercel.
 - PvP em tempo real com Socket.io nao roda dentro da Vercel como servidor persistente. O servidor de socket precisa ficar em outro host Node longo prazo, como Render, Fly.io ou Railway.
 - Se quiser somente PvE e login/conta/ranking, Vercel + Neon basta.
+- No Google Cloud Console, o client OAuth precisa ter exatamente estes redirect URIs autorizados:
+  - local: `http://localhost:3000/api/auth/callback/google`
+  - producao: `https://SEU-DOMINIO-VERCEL/api/auth/callback/google`
+- Se o app estiver em preview, adicione tambem a URL da preview usada pelo Vercel.
+- `NEXTAUTH_URL` na Vercel deve apontar para a URL publica real do deploy, nunca para `localhost`.
+- `AUTH_GOOGLE_ID` e `AUTH_GOOGLE_SECRET` devem bater com o mesmo client OAuth que tem os redirect URIs acima.
 
 ## Opcao 3: Docker
 

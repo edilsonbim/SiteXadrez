@@ -12,7 +12,6 @@
 import NextAuth, { type DefaultSession } from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -43,7 +42,6 @@ const authSecret = pickEnv("AUTH_SECRET", "NEXTAUTH_SECRET");
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   secret: authSecret,
-  adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   providers: [
     ...(googleClientId && googleClientSecret
@@ -80,43 +78,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = (user as any).id;
         token.isGuest = (user as any).isGuest === true;
+        token.name = user.name ?? token.name;
+        token.email = user.email ?? token.email;
+        token.picture = user.image ?? token.picture;
+        token.rating = (user as any).rating ?? 1200;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user && token?.id) {
-        // Refresh rating + isGuest from DB every time. Cheap (single index
-        // lookup by primary key) and avoids stale rating after games.
-        const fresh = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { rating: true, isGuest: true },
-        });
         (session.user as any).id = token.id;
-        (session.user as any).rating = fresh?.rating ?? 1200;
-        (session.user as any).isGuest = fresh?.isGuest === true;
+        session.user.name = token.name ?? session.user.name;
+        session.user.email = token.email ?? session.user.email;
+        session.user.image = token.picture ?? session.user.image;
+        (session.user as any).rating = (token.rating as number | undefined) ?? 1200;
+        (session.user as any).isGuest = token.isGuest === true;
       }
       return session;
-    },
-  },
-  events: {
-    async createUser({ user }) {
-      // Ensure every new account starts with the canonical rating.
-      const initial = parseInt(process.env.INITIAL_RATING ?? "1200", 10);
-      if (Number.isFinite(initial) && user.id) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { rating: initial, rd: 350, volatility: 0.06 },
-        });
-        await prisma.ratingHistory.create({
-          data: {
-            userId: user.id,
-            rating: initial,
-            rd: 350,
-            delta: 0,
-            reason: "initial",
-          },
-        });
-      }
     },
   },
 });

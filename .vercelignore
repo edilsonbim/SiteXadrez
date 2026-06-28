@@ -1,0 +1,12 @@
+.env
+.env.local
+.env.development
+.env.production
+prisma/dev.db
+prisma/dev.db-journal
+.pgdata
+dev.log
+dev.err.log
+prod.log
+start.err.log
+start.out.log

@@ -52,6 +52,7 @@ export function Board({ fen, side, onMove, disabled, pieceStyle = "classic", las
   }
 
   const orderedIdx = flipped ? [...Array(64).keys()].reverse() : [...Array(64).keys()];
+  const orderedFiles = flipped ? [...FILES].reverse() : FILES;
 
   return (
     <div className="grid gap-3 xl:grid-cols-[auto_1fr] items-start">
@@ -103,7 +104,7 @@ export function Board({ fen, side, onMove, disabled, pieceStyle = "classic", las
                 </div>
               </div>
               <div className="mt-2 text-[10px] uppercase tracking-[0.24em] text-ink-soft board-files">
-                {FILES.map((f) => <span key={f} className="leading-none">{f}</span>)}
+                {orderedFiles.map((f) => <span key={f} className="leading-none">{f}</span>)}
               </div>
             </div>
           </div>

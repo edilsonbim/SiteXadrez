@@ -33,3 +33,4 @@ test-results
 .turbo
 
 next-env.d.ts
+.vercel

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 export default async function ProfilePage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  const me = await prisma.user.findUnique({ where: { id: (session.user as any).id } });
+  const me = await safeUser((session.user as any).id, session.user);
   if (!me) redirect("/login");
   const isGuest = me.isGuest;
 
@@ -120,6 +120,30 @@ export default async function ProfilePage() {
       </div>
     </div>
   );
+}
+
+async function safeUser(id: string, sessionUser: any) {
+  try {
+    const me = await prisma.user.findUnique({ where: { id } });
+    if (me) return me;
+  } catch {
+    // fall through to session-only view
+  }
+
+  return {
+    id,
+    name: sessionUser.name ?? "Jogador",
+    email: sessionUser.email ?? "sem-email",
+    image: sessionUser.image ?? null,
+    isGuest: sessionUser.isGuest === true,
+    rating: sessionUser.rating ?? 1200,
+    rd: 350,
+    volatility: 0.06,
+    gamesPlayed: 0,
+    wins: 0,
+    losses: 0,
+    draws: 0,
+  } as any;
 }
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {

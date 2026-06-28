@@ -6,10 +6,10 @@ import { auth } from "@/server/auth";
 import { Button } from "@/components/ui/Button";
 
 export default async function Home() {
-  const session = await auth();
+  const session = await safeAuth();
   const userId = (session?.user as any)?.id as string | undefined;
-  const me = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
-  const online = await prisma.game.count({ where: { status: "IN_PROGRESS" } });
+  const me = userId ? await safeUser(userId) : null;
+  const online = await safeOnlineCount();
 
   return (
     <div className="space-y-8 enter-rise">
@@ -58,6 +58,30 @@ export default async function Home() {
       </section>
     </div>
   );
+}
+
+async function safeAuth() {
+  try {
+    return await auth();
+  } catch {
+    return null;
+  }
+}
+
+async function safeUser(userId: string) {
+  try {
+    return await prisma.user.findUnique({ where: { id: userId } });
+  } catch {
+    return null;
+  }
+}
+
+async function safeOnlineCount() {
+  try {
+    return await prisma.game.count({ where: { status: "IN_PROGRESS" } });
+  } catch {
+    return 0;
+  }
 }
 
 function Stat({ title, value }: { title: string; value: string }) {
