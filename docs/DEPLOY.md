@@ -17,12 +17,31 @@ Roda tudo em um unico VPS (Hetzner, DigitalOcean, OVH).
    Em prod: `NODE_ENV=production` e `AUTH_SECRET` forte.
 3. Nginx como reverse proxy para `localhost:3000` com HTTPS (certbot).
 
-## Opcao 2: Vercel (Next.js) + Postgres gerenciado
+## Opcao 2: Vercel (Next.js) + Neon (Postgres)
 
-- Vercel: faca deploy do app Next.js normalmente. Configure envs no painel.
-- Socket.io precisa de servidor proprio. Suba `scripts/dev-server.mjs` em Railway/Render/Fly.
-- Banco: troque `provider = "sqlite"` para `provider = "postgresql"` em `prisma/schema.prisma` e use `DATABASE_URL=postgres://...`.
-- Atualize `next.config.mjs` removendo `serverComponentsExternalPackages` se nao precisar.
+Fluxo recomendado para producao do Rookary:
+
+1. Suba o projeto no Vercel conectando o repositorio GitHub.
+2. Crie um banco no Neon e use a `DATABASE_URL` fornecida por ele.
+3. Configure as envs no painel da Vercel:
+   - `DATABASE_URL`
+   - `NEXTAUTH_URL`
+   - `NEXTAUTH_SECRET`
+   - `AUTH_SECRET`
+   - `AUTH_GOOGLE_ID`
+   - `AUTH_GOOGLE_SECRET`
+   - `AUTH_TRUST_HOST=true`
+   - `INITIAL_RATING`
+   - `K_FACTOR_NEW`
+   - `K_FACTOR_ESTABLISHED`
+   - `NEXT_PUBLIC_SOCKET_URL`
+4. Rode `prisma migrate deploy` no banco Neon antes do primeiro deploy.
+5. Faça deploy do app.
+
+Importante:
+- O app Next.js roda muito bem na Vercel.
+- PvP em tempo real com Socket.io nao roda dentro da Vercel como servidor persistente. O servidor de socket precisa ficar em outro host Node longo prazo, como Render, Fly.io ou Railway.
+- Se quiser somente PvE e login/conta/ranking, Vercel + Neon basta.
 
 ## Opcao 3: Docker
 
@@ -46,6 +65,10 @@ Banco: volume montado em `/app/prisma/dev.db` ou `DATABASE_URL` apontando para P
 - `NEXTAUTH_URL`
 - `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`
 - `NEXT_PUBLIC_SOCKET_URL` (aponta para o servidor Socket.io)
+- `AUTH_TRUST_HOST=true`
+- `INITIAL_RATING`
+- `K_FACTOR_NEW`
+- `K_FACTOR_ESTABLISHED`
 
 ## Observacoes
 
