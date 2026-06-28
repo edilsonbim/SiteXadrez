@@ -38,6 +38,7 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
 
   const chess = useMemo(() => new Chess(fen), [fen]);
   const turn = chess.turn();
+  const boardOrientation: "w" | "b" = side === "b" ? "b" : "w";
   const lastMove = moves.length ? (() => {
     const uci = moves[moves.length - 1]?.uci ?? "";
     return uci.length >= 4 ? { from: uci.slice(0, 2), to: uci.slice(2, 4) } : null;
@@ -63,7 +64,9 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
 
   useEffect(() => {
     if (mode !== "PVE" || result !== "ONGOING") return;
-    if (side !== "b" || turn !== "w") return;
+    if (side === "spectator") return;
+    const aiTurn = side === "w" ? "b" : "w";
+    if (turn !== aiTurn) return;
     if (aiThinking || autoAiMoveRef.current) return;
     autoAiMoveRef.current = true;
     setAiThinking(true);
@@ -247,6 +250,7 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
                 <Board
                   fen={fen}
                   side={side}
+                  orientation={boardOrientation}
                   onMove={(move) => commitMove(move)}
                   disabled={result !== "ONGOING" || side === "spectator" || turn !== side || aiThinking}
                   pieceStyle={pieceStyle}

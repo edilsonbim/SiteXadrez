@@ -10,12 +10,10 @@ const FILES = ["a","b","c","d","e","f","g","h"];
 function squareName(idx: number) { return FILES[idx % 8] + (8 - Math.floor(idx / 8)); }
 function squareIndex(name: string) { return FILES.indexOf(name[0]) + (8 - parseInt(name[1], 10)) * 8; }
 
-export function Board({ fen, side, onMove, disabled, pieceStyle = "classic", lastMove, onFullscreen }: { fen: string; side: "w" | "b" | "spectator"; onMove: (move: { from: string; to: string }) => void; disabled?: boolean; pieceStyle?: "classic" | "carved" | "metal"; lastMove?: { from: string; to: string } | null; onFullscreen?: () => void }) {
+export function Board({ fen, side, orientation = "w", onMove, disabled, pieceStyle = "classic", lastMove, onFullscreen }: { fen: string; side: "w" | "b" | "spectator"; orientation?: "w" | "b"; onMove: (move: { from: string; to: string }) => void; disabled?: boolean; pieceStyle?: "classic" | "carved" | "metal"; lastMove?: { from: string; to: string } | null; onFullscreen?: () => void }) {
   const chess = useMemo(() => new Chess(fen), [fen]);
   const [selected, setSelected] = useState<number | null>(null);
   const [legalTargets, setLegalTargets] = useState<number[]>([]);
-  const [flipped, setFlipped] = useState(false);
-
   useEffect(() => { setSelected(null); setLegalTargets([]); }, [fen]);
 
   const pieces = chess.board().flatMap((row, r) => row.map((sq, f) => ({ sq, idx: r * 8 + f })));
@@ -50,6 +48,7 @@ export function Board({ fen, side, onMove, disabled, pieceStyle = "classic", las
     setSelected(null); setLegalTargets([]);
   }
 
+  const flipped = orientation === "b";
   const orderedIdx = flipped ? [...Array(64).keys()].reverse() : [...Array(64).keys()];
   const orderedFiles = flipped ? [...FILES].reverse() : FILES;
 
@@ -111,7 +110,7 @@ export function Board({ fen, side, onMove, disabled, pieceStyle = "classic", las
             </div>
           </div>
         </div>
-        <button className="text-xs text-ink-soft mt-2 underline" onClick={() => setFlipped((f) => !f)}>Girar tabuleiro</button>
+        <div className="text-xs text-ink-soft mt-2">O tabuleiro gira automaticamente conforme sua cor.</div>
       </div>
     </div>
   );
