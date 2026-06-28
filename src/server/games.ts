@@ -15,11 +15,13 @@ export async function createPveGame(opts: { userId: string; initialTime?: number
   if (!user) throw new Error("user_not_found");
   const engine = engineForRating(user.rating);
   const t = opts.initialTime ?? 600;
+  const humanPlaysWhite = Math.random() < 0.5;
   return prisma.game.create({
     data: {
       mode: "PVE",
       status: "IN_PROGRESS",
-      whiteId: user.id,
+      whiteId: humanPlaysWhite ? user.id : null,
+      blackId: humanPlaysWhite ? null : user.id,
       initialTime: t,
       increment: opts.increment ?? 0,
       whiteTime: t,

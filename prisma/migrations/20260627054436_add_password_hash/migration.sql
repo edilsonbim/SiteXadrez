@@ -1,2 +1,1 @@
--- AlterTable
-ALTER TABLE "User" ADD COLUMN "passwordHash" TEXT;
+-- no-op on PostgreSQL baseline

@@ -27,7 +27,12 @@ export function LobbyClient({ user }: { user: Me }) {
     try {
       const res = await fetch("/api/games", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ initialTime: timeControl * 60, increment: 0 }) });
       const json = await safeJson(res);
-      if (!res.ok) throw new Error(json.error ?? "erro");
+      if (!res.ok) {
+        if (json.error === "production_database_missing") {
+          throw new Error("Mesa solo indisponível na produção sem banco configurado.");
+        }
+        throw new Error(json.error ?? "erro");
+      }
       router.push(`/game/${json.gameId}?mode=pve`);
     } catch (e: any) { setError(e.message ?? "erro"); }
     finally { setBusy(false); }
@@ -99,7 +104,7 @@ export function LobbyClient({ user }: { user: Me }) {
           <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl bg-white/5 p-5 border border-white/10 space-y-3">
             <h3 className="font-display text-xl text-ink">Mesa solo</h3>
-            <p className="text-sm text-ink-soft">Você joga de brancas contra o motor. Nível: <b className="text-ink">{engine.label}</b>. Tempo {timeControl} min.</p>
+            <p className="text-sm text-ink-soft">Cor inicial aleatória contra o motor. Nível: <b className="text-ink">{engine.label}</b>. Tempo {timeControl} min.</p>
             <Button onClick={startVsAI} disabled={busy}>{busy ? "Criando..." : "Jogar agora"}</Button>
           </div>
           <div className="rounded-2xl bg-white/5 p-5 border border-white/10 space-y-3">

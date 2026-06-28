@@ -38,6 +38,31 @@ function pickEnv(...keys: string[]) {
 const googleClientId = pickEnv("AUTH_GOOGLE_ID", "GOOGLE_CLIENT_ID");
 const googleClientSecret = pickEnv("AUTH_GOOGLE_SECRET", "GOOGLE_CLIENT_SECRET");
 const authSecret = pickEnv("AUTH_SECRET", "NEXTAUTH_SECRET");
+const initialRating = parseInt(process.env.INITIAL_RATING ?? "1200", 10);
+
+async function upsertAuthUser(input: { email?: string | null; name?: string | null; image?: string | null; isGuest?: boolean }) {
+  if (!input.email) return null;
+  return prisma.user.upsert({
+    where: { email: input.email },
+    update: {
+      name: input.name ?? undefined,
+      image: input.image ?? undefined,
+      isGuest: input.isGuest ?? false,
+      rating: Number.isFinite(initialRating) ? initialRating : 1200,
+      rd: 350,
+      volatility: 0.06,
+    },
+    create: {
+      email: input.email,
+      name: input.name ?? null,
+      image: input.image ?? null,
+      isGuest: input.isGuest ?? false,
+      rating: Number.isFinite(initialRating) ? initialRating : 1200,
+      rd: 350,
+      volatility: 0.06,
+    },
+  });
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
@@ -72,16 +97,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: { signIn: "/login" },
   debug: process.env.NODE_ENV !== "production",
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, profile }) {
       // On sign-in `user` is set; persist its id and guest flag into the JWT
       // so later calls (without `user`) can keep using them.
       if (user) {
-        token.id = (user as any).id;
-        token.isGuest = (user as any).isGuest === true;
-        token.name = user.name ?? token.name;
-        token.email = user.email ?? token.email;
-        token.picture = user.image ?? token.picture;
-        token.rating = (user as any).rating ?? 1200;
+        const persisted = await upsertAuthUser({
+          email: user.email ?? token.email ?? profile?.email ?? null,
+          name: user.name ?? token.name ?? profile?.name ?? null,
+          image: user.image ?? token.picture ?? profile?.picture ?? null,
+          isGuest: (user as any).isGuest === true,
+        });
+        token.id = persisted?.id ?? (user as any).id ?? token.id;
+        token.isGuest = persisted?.isGuest === true || (user as any).isGuest === true;
+        token.name = persisted?.name ?? user.name ?? token.name;
+        token.email = persisted?.email ?? user.email ?? token.email;
+        token.picture = persisted?.image ?? user.image ?? token.picture;
+        token.rating = persisted?.rating ?? (user as any).rating ?? 1200;
       }
       return token;
     },

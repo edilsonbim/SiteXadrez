@@ -18,6 +18,10 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({ gameId: game.id });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("DATABASE_URL") || message.includes("datasource") || message.includes("P1012")) {
+      return NextResponse.json({ error: "production_database_missing" }, { status: 503 });
+    }
     return NextResponse.json({ error: "game_create_failed" }, { status: 500 });
   }
 }

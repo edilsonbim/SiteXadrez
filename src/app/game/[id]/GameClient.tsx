@@ -33,6 +33,7 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
   const [connectionNote, setConnectionNote] = useState<string>("Conectando...");
   const socketRef = useRef<Socket | null>(null);
   const boardShellRef = useRef<HTMLDivElement | null>(null);
+  const autoAiMoveRef = useRef(false);
 
   const chess = useMemo(() => new Chess(fen), [fen]);
   const turn = chess.turn();
@@ -54,9 +55,31 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
       if (j.game.whiteId === me.id) setSide("w");
       else if (j.game.blackId === me.id) setSide("b");
       else setSide("spectator");
+      autoAiMoveRef.current = false;
     });
     return () => { cancelled = true; };
   }, [gameId, me.id]);
+
+  useEffect(() => {
+    if (mode !== "PVE" || result !== "ONGOING") return;
+    if (side !== "b" || turn !== "w") return;
+    if (aiThinking || autoAiMoveRef.current) return;
+    autoAiMoveRef.current = true;
+    setAiThinking(true);
+    (async () => {
+      try {
+        const ai = await fetch(`/api/games/${gameId}/ai-move`, { method: "POST" });
+        const aiJson = await ai.json().catch(() => ({}));
+        if (ai.ok && aiJson.result) {
+          setFen(aiJson.fen); setPgn(aiJson.pgn); setResult(aiJson.result);
+          setMoves((m) => [...m, { ...aiJson.move }]);
+        }
+      } finally {
+        setAiThinking(false);
+        autoAiMoveRef.current = false;
+      }
+    })();
+  }, [aiThinking, gameId, mode, result, side, turn]);
 
   useEffect(() => {
     if (mode !== "PVP") return;
