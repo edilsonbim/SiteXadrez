@@ -9,7 +9,7 @@ import { RatingBadge } from "@/components/ui/RatingBadge";
 import { io, Socket } from "socket.io-client";
 import { MoveList } from "@/components/chess/MoveList";
 import { GameClock } from "@/components/chess/GameClock";
-import { Crown, Landmark, Medal, Skull, Handshake } from "lucide-react";
+import { Crown, Landmark, Medal, Skull, Handshake, Flag } from "lucide-react";
 
 interface Me { id: string; name: string; image: string | null }
 
@@ -31,6 +31,7 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
   const [theme, setTheme] = useState<"classic" | "arena">("classic");
   const [pieceStyle, setPieceStyle] = useState<"classic" | "carved" | "metal">("classic");
   const [connectionNote, setConnectionNote] = useState<string>("Conectando...");
+  const [promotion, setPromotion] = useState<{ from: string; to: string; side: "w" | "b" } | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const boardShellRef = useRef<HTMLDivElement | null>(null);
   const autoAiMoveRef = useRef(false);
@@ -168,6 +169,25 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
     }
   }
 
+  async function commitMove(move: { from: string; to: string; promotion?: "q" | "r" | "b" | "n" }) {
+    const isPromotion = isPawnPromotionMove(fen, move.from, move.to, side);
+    if (isPromotion && !move.promotion) {
+      setPromotion({ from: move.from, to: move.to, side: side === "spectator" ? (chess.turn() as "w" | "b") : side });
+      return;
+    }
+    await sendMove(move.from + move.to + (move.promotion ?? ""));
+  }
+
+  async function resign() {
+    if (!confirm("Deseja realmente desistir desta partida?")) return;
+    const res = await fetch(`/api/games/${gameId}/resign`, { method: "POST" });
+    if (!res.ok) return;
+    const json = await res.json();
+    if (json?.game) {
+      setResult(json.game.result);
+    }
+  }
+
   return (
     <div className={`grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px] enter-rise ${theme === "classic" ? "theme-classic" : "theme-arena"}`}>
       <Card className="overflow-hidden">
@@ -227,7 +247,7 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
                 <Board
                   fen={fen}
                   side={side}
-                  onMove={(uci) => sendMove(uci)}
+                  onMove={(move) => commitMove(move)}
                   disabled={result !== "ONGOING" || side === "spectator" || turn !== side || aiThinking}
                   pieceStyle={pieceStyle}
                   lastMove={lastMove}
@@ -242,6 +262,12 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
                   {result === "ONGOING" ? (aiThinking ? "IA calculando" : "Turno em andamento") : "Tempo esgotado = derrota"}
                 </div>
                 <div className="flex gap-2">
+                  {result === "ONGOING" && side !== "spectator" && (
+                    <Button variant="secondary" size="sm" onClick={resign} className="gap-2">
+                      <Flag className="h-4 w-4" />
+                      Desistir
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" onClick={() => navigator.clipboard.writeText(pgn)}>Copiar PGN</Button>
                   <Button variant="secondary" size="sm" onClick={() => location.assign("/lobby")}>Voltar à mesa</Button>
                 </div>
@@ -252,6 +278,17 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
         </CardContent>
       </Card>
       {finished && <ResultOverlay result={result} />}
+      {promotion && (
+        <PromotionModal
+          side={promotion.side}
+          onChoose={async (piece) => {
+            const next = promotion;
+            setPromotion(null);
+            await sendMove(next.from + next.to + piece);
+          }}
+          onCancel={() => setPromotion(null)}
+        />
+      )}
       <Card className="overflow-hidden">
         <CardHeader className={theme === "classic" ? "bg-amber-950/30" : "bg-slate-900/80"}>
           <CardTitle>HUD de torneio</CardTitle>
@@ -273,6 +310,59 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function isPawnPromotionMove(fen: string, from: string, to: string, side: "w" | "b" | "spectator") {
+  const board = fen.split(" ")[0].split("/");
+  const piece = pieceAt(board, from);
+  if (!piece || piece.toLowerCase() !== "p") return false;
+  if (side === "w") return from[1] === "7" && to[1] === "8";
+  if (side === "b") return from[1] === "2" && to[1] === "1";
+  return false;
+}
+
+function pieceAt(rows: string[], square: string) {
+  const file = square.charCodeAt(0) - 97;
+  const rank = 8 - Number(square[1]);
+  const row = rows[rank];
+  if (!row) return null;
+  let col = 0;
+  for (const ch of row) {
+    if (/\d/.test(ch)) {
+      col += Number(ch);
+      continue;
+    }
+    if (col === file) return ch;
+    col += 1;
+  }
+  return null;
+}
+
+function PromotionModal({ side, onChoose, onCancel }: { side: "w" | "b"; onChoose: (piece: "q" | "r" | "b" | "n") => void; onCancel: () => void }) {
+  const options: Array<{ piece: "q" | "r" | "b" | "n"; label: string }> = [
+    { piece: "q", label: "Dama" },
+    { piece: "r", label: "Torre" },
+    { piece: "b", label: "Bispo" },
+    { piece: "n", label: "Cavalo" },
+  ];
+  return (
+    <div className="fixed inset-0 z-[60] grid place-items-center bg-black/70 backdrop-blur-sm">
+      <div className="w-[min(92vw,420px)] rounded-[1.6rem] border border-white/10 bg-slate-950 p-5 shadow-2xl">
+        <h3 className="font-display text-2xl text-ink">Promover peão</h3>
+        <p className="mt-2 text-sm text-ink-soft">Escolha a nova peça para o peão {side === "w" ? "branco" : "preto"}.</p>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          {options.map((opt) => (
+            <Button key={opt.piece} onClick={() => onChoose(opt.piece)} variant="secondary">
+              {opt.label}
+            </Button>
+          ))}
+        </div>
+        <div className="mt-3">
+          <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
+        </div>
+      </div>
     </div>
   );
 }

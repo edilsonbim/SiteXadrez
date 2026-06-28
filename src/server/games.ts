@@ -269,3 +269,28 @@ export async function finalizeTimeout(gameId: string, loserSide: "w" | "b") {
   await finalizeRating(updated.id);
   return updated;
 }
+
+export async function resignGame(opts: { gameId: string; userId: string | null }) {
+  const game = await prisma.game.findUnique({
+    where: { id: opts.gameId },
+    include: {
+      white: { select: { id: true } },
+      black: { select: { id: true } },
+    },
+  });
+  if (!game || game.status !== "IN_PROGRESS") return { ok: false, reason: "not_active" as const };
+  if (!opts.userId) return { ok: false, reason: "unauthorized" as const };
+  const isWhite = game.whiteId === opts.userId;
+  const isBlack = game.blackId === opts.userId;
+  if (!isWhite && !isBlack) return { ok: false, reason: "forbidden" as const };
+  const updated = await prisma.game.update({
+    where: { id: opts.gameId },
+    data: {
+      status: "FINISHED",
+      result: isWhite ? "BLACK_WIN" : "WHITE_WIN",
+      winnerId: isWhite ? game.blackId : game.whiteId,
+    },
+  });
+  await finalizeRating(updated.id);
+  return { ok: true as const, game: updated };
+}
