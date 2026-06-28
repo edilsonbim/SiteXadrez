@@ -95,7 +95,6 @@ html::before {
 }
 
 .piece-image--white { filter: drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
-.piece-image--white-fallback { filter: brightness(0) invert(1) drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
 
 .piece-image--classic { filter: drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
 .piece-image--carved { filter: drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
@@ -103,9 +102,6 @@ html::before {
 .piece-image--white.piece-image--classic { filter: drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
 .piece-image--white.piece-image--carved { filter: drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
 .piece-image--white.piece-image--metal { filter: drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
-.piece-image--white-fallback.piece-image--classic { filter: brightness(0) invert(1) drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
-.piece-image--white-fallback.piece-image--carved { filter: brightness(0) invert(1) drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
-.piece-image--white-fallback.piece-image--metal { filter: brightness(0) invert(1) drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
 
 .piece-appear {
   animation: pieceAppear 180ms ease-out;
