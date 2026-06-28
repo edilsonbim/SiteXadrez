@@ -2,23 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Chess } from "chess.js";
+import { Piece } from "./Piece";
+import { Focus } from "lucide-react";
 
 const FILES = ["a","b","c","d","e","f","g","h"];
 
 function squareName(idx: number) { return FILES[idx % 8] + (8 - Math.floor(idx / 8)); }
 function squareIndex(name: string) { return FILES.indexOf(name[0]) + (8 - parseInt(name[1], 10)) * 8; }
 
-const UNICODE: Record<string, string> = {
-  K: "♔", Q: "♕", R: "♖", B: "♗", N: "♘", P: "♙",
-  k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟",
-};
-
-export function Board({ fen, side, onMove, disabled }: { fen: string; side: "w" | "b" | "spectator"; onMove: (uci: string) => void; disabled?: boolean }) {
+export function Board({ fen, side, orientation = "w", onMove, disabled, lastMove, onFullscreen }: { fen: string; side: "w" | "b" | "spectator"; orientation?: "w" | "b"; onMove: (move: { from: string; to: string }) => void; disabled?: boolean; lastMove?: { from: string; to: string } | null; onFullscreen?: () => void }) {
   const chess = useMemo(() => new Chess(fen), [fen]);
   const [selected, setSelected] = useState<number | null>(null);
   const [legalTargets, setLegalTargets] = useState<number[]>([]);
-  const [flipped, setFlipped] = useState(false);
-
   useEffect(() => { setSelected(null); setLegalTargets([]); }, [fen]);
 
   const pieces = chess.board().flatMap((row, r) => row.map((sq, f) => ({ sq, idx: r * 8 + f })));
@@ -40,8 +35,7 @@ export function Board({ fen, side, onMove, disabled }: { fen: string; side: "w" 
       const to = squareName(idx);
       const m = chess.moves({ square: from as any, verbose: true }) as any[];
       const mv = m.find((x: any) => x.to === to);
-      const uci = from + to + (mv?.promotion ?? "");
-      onMove(uci);
+      onMove({ from, to });
       setSelected(null); setLegalTargets([]);
       return;
     }
@@ -54,44 +48,57 @@ export function Board({ fen, side, onMove, disabled }: { fen: string; side: "w" 
     setSelected(null); setLegalTargets([]);
   }
 
+  const flipped = orientation === "b";
   const orderedIdx = flipped ? [...Array(64).keys()].reverse() : [...Array(64).keys()];
+  const orderedFiles = flipped ? [...FILES].reverse() : FILES;
 
   return (
-    <div className="grid grid-cols-[auto_1fr] gap-2">
-      <div className="flex flex-col justify-between text-xs text-ink-soft py-1 select-none">
-        {Array.from({ length: 8 }, (_, i) => 8 - i).map((n) => <span key={n}>{n}</span>)}
-      </div>
-      <div>
-        <div className="grid grid-cols-8 rounded-md overflow-hidden border border-line">
-          {orderedIdx.map((idx) => {
-            const isLight = (Math.floor(idx / 8) + (idx % 8)) % 2 === 0;
-            const piece = pieces.find((p) => p.idx === idx)?.sq;
-            const isSelected = selected === idx;
-            const isLegal = legalTargets.includes(idx);
-            return (
-              <button
-                key={idx}
-                onClick={() => handleSquareClick(idx)}
-                aria-label={squareName(idx)}
-                className={[
-                  "relative aspect-square flex items-center justify-center text-4xl leading-none transition-colors",
-                  isLight ? "square-light text-black" : "square-dark text-white",
-                  isSelected ? "square-selected" : "",
-                  isLegal ? "after:absolute after:h-3 after:w-3 after:rounded-full after:bg-accent/70" : "",
-                ].join(" ")}
-                disabled={disabled}
-              >
-                {piece && (
-                  <span className="piece">{UNICODE[piece.color === "w" ? piece.type.toUpperCase() : piece.type]}</span>
-                )}
-                {(idx % 8 === 0) && <span className={`absolute left-1 top-0 text-[10px] ${isLight ? "text-black/60" : "text-white/70"}`}>{8 - Math.floor(idx / 8)}</span>}
-                {(idx < 8) && <span className={`absolute right-1 bottom-0 text-[10px] ${isLight ? "text-black/60" : "text-white/70"}`}>{FILES[idx % 8]}</span>}
-              </button>
-            );
-          })}
+    <div>
+        <div className="rounded-[2rem] p-4 board-frame">
+          <div className="rounded-[1.4rem] p-3 board-surface border border-white/10">
+            <div className="board-shell">
+              <div className="board-grid-wrap">
+                <div className="grid grid-cols-8 overflow-hidden rounded-[1.1rem] ring-1 ring-black/35 board-grid">
+              {orderedIdx.map((idx) => {
+                const isLight = (Math.floor(idx / 8) + (idx % 8)) % 2 === 0;
+                const piece = pieces.find((p) => p.idx === idx)?.sq;
+                const isSelected = selected === idx;
+                const isLegal = legalTargets.includes(idx);
+                const name = squareName(idx);
+                const isLastFrom = lastMove?.from === name;
+                const isLastTo = lastMove?.to === name;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => handleSquareClick(idx)}
+                    aria-label={squareName(idx)}
+                    className={[
+                      "board-square relative aspect-square flex items-center justify-center transition-all duration-200 hover:brightness-110",
+                      isLight ? "square-light" : "square-dark",
+                      isSelected ? "square-selected" : "",
+                      isLastFrom ? "square-last-from" : "",
+                      isLastTo ? "square-last-to" : "",
+                      isLegal ? "after:absolute after:h-3 after:w-3 after:rounded-full after:bg-accent/70 after:shadow-glow" : "",
+                    ].join(" ")}
+                    disabled={disabled}
+                  >
+                    {piece && <Piece kind={piece.type} color={piece.color} className="piece-appear" />}
+                  </button>
+                );
+              })}
+                </div>
+              </div>
+              <div className="board-files board-files--bottom px-1 text-[10px] uppercase tracking-[0.24em] text-ink-soft" aria-hidden="true">
+                {orderedFiles.map((f) => <span key={f} className="leading-none">{f}</span>)}
+              </div>
+              <div className="board-bottombar">
+                <button className="inline-flex items-center gap-1 rounded-full border border-white/10 px-2 py-1 text-[10px] hover:text-ink" onClick={onFullscreen} type="button">
+                  <Focus className="h-3.5 w-3.5" /> Tela cheia
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-        <button className="text-xs text-ink-soft mt-2 underline" onClick={() => setFlipped((f) => !f)}>Girar tabuleiro</button>
-      </div>
     </div>
   );
 }

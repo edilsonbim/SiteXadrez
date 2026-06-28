@@ -1,12 +1,12 @@
-# Xadrez Lobby
+# Rookary Chess
 
-Lobby de xadrez online com autenticacao Google, partidas contra IA com nivel ajustado ao rating e partidas PvP via matchmaking.
+Xadrez online com autenticacao Google, partidas contra IA com nivel ajustado ao rating e partidas PvP via matchmaking.
 
 ## Stack
 
 - Next.js 14 (App Router) + TypeScript
 - Tailwind CSS 3
-- Prisma + SQLite (dev) / Postgres (prod)
+- Prisma + Postgres (dev/prod)
 - Auth.js v5 (NextAuth) com Google OAuth
 - chess.js para regras/FEN/PGN/SAN
 - Stockfish (npm) com fallback heuristico
@@ -119,4 +119,4 @@ tests/
 
 ## Deploy
 
-Veja `docs/DEPLOY.md`. SQLite funciona para hobby; em escala troque para Postgres editando `prisma/schema.prisma` e rodando `prisma migrate deploy`.
+Veja `docs/DEPLOY.md`. O caminho recomendado de producao e Vercel + Neon.

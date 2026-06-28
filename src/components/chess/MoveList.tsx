@@ -9,7 +9,7 @@ export function MoveList({ moves }: { moves: MoveDTO[] }) {
   return (
     <ol className="text-sm font-mono space-y-1 max-h-96 overflow-auto pr-2">
       {pairs.map((p) => (
-        <li key={p.num} className="flex gap-3">
+        <li key={p.num} className="flex gap-3 rounded-xl px-2 py-1 hover:bg-white/5 transition-colors">
           <span className="w-6 text-right text-ink-soft">{p.num}.</span>
           <span className="flex-1 text-ink">{p.w?.san ?? ""}</span>
           <span className="flex-1 text-ink-soft">{p.b?.san ?? ""}</span>
