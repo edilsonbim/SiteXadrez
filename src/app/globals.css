@@ -94,16 +94,18 @@ html::before {
   filter: drop-shadow(0 8px 10px rgba(0,0,0,.42));
 }
 
-.piece-image--white {
-  filter: brightness(0) invert(1) drop-shadow(0 8px 10px rgba(0,0,0,.42));
-}
+.piece-image--white { filter: drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
+.piece-image--white-fallback { filter: brightness(0) invert(1) drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
 
-.piece-image--classic { filter: saturate(0.9) contrast(1.04); }
-.piece-image--carved { filter: sepia(0.65) saturate(1.25) contrast(1.05); }
-.piece-image--metal { filter: grayscale(1) brightness(1.12) contrast(1.08); }
-.piece-image--white.piece-image--classic { filter: brightness(0) invert(1) saturate(0.9) contrast(1.04) drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
-.piece-image--white.piece-image--carved { filter: brightness(0) invert(1) sepia(0.65) saturate(1.25) contrast(1.05) drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
-.piece-image--white.piece-image--metal { filter: brightness(0) invert(1) grayscale(1) brightness(1.12) contrast(1.08) drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
+.piece-image--classic { filter: drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
+.piece-image--carved { filter: drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
+.piece-image--metal { filter: drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
+.piece-image--white.piece-image--classic { filter: drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
+.piece-image--white.piece-image--carved { filter: drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
+.piece-image--white.piece-image--metal { filter: drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
+.piece-image--white-fallback.piece-image--classic { filter: brightness(0) invert(1) drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
+.piece-image--white-fallback.piece-image--carved { filter: brightness(0) invert(1) drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
+.piece-image--white-fallback.piece-image--metal { filter: brightness(0) invert(1) drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
 
 .piece-appear {
   animation: pieceAppear 180ms ease-out;
