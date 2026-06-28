@@ -26,7 +26,7 @@ export function LobbyClient({ user }: { user: Me }) {
     setBusy(true); setError(null);
     try {
       const res = await fetch("/api/games", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ initialTime: timeControl * 60, increment: 0 }) });
-      const json = await res.json();
+      const json = await safeJson(res);
       if (!res.ok) throw new Error(json.error ?? "erro");
       router.push(`/game/${json.gameId}?mode=pve`);
     } catch (e: any) { setError(e.message ?? "erro"); }
@@ -38,7 +38,7 @@ export function LobbyClient({ user }: { user: Me }) {
     const tick = async () => {
       try {
         const res = await fetch("/api/matchmaking/join", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ initialTime: timeControl * 60, increment: 0 }) });
-        const json = await res.json();
+        const json = await safeJson(res);
         if (json.matched) {
           setMatched(json.gameId);
           setQueueing(false);
@@ -105,11 +105,14 @@ export function LobbyClient({ user }: { user: Me }) {
           <div className="rounded-2xl bg-white/5 p-5 border border-white/10 space-y-3">
             <h3 className="font-display text-xl text-ink">Mesa PvP</h3>
             <p className="text-sm text-ink-soft">Matchmaking por rating com janela progressiva. Tempo {timeControl} min.</p>
-            <Button onClick={joinQueue} variant="secondary" disabled={queueing}>{queueing ? "Procurando..." : "Entrar na fila"}</Button>
+            <Button onClick={joinQueue} variant="secondary" disabled={queueing} className={queueing ? "queue-button queue-button--active" : ""}>
+              <span className="queue-button__label">{queueing ? "Procurando" : "Entrar na fila"}</span>
+              {queueing && <span className="queue-button__dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>}
+            </Button>
             {queueing && (
-              <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-ink-soft space-y-1">
+              <div className="queue-panel rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-ink-soft space-y-1">
                 <p className="text-ink">Você está na fila</p>
-                <p>Tempo aguardando: {queueElapsed}s</p>
+                <p>Tempo aguardando: {queueElapsed}s <span className="queue-panel__pulse" aria-hidden="true">●</span></p>
                 {queueFallbackAt && (
                   <p>Fallback para IA em até {Math.max(0, Math.ceil((queueFallbackAt - Date.now()) / 1000))}s</p>
                 )}
@@ -137,4 +140,13 @@ export function LobbyClient({ user }: { user: Me }) {
       {matched && <p className="text-good text-sm">Partida encontrada: {matched}</p>}
     </div>
   );
+}
+
+async function safeJson(res: Response) {
+  const text = await res.text();
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    return { error: text || "bad_response" };
+  }
 }
