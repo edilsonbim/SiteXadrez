@@ -5,8 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { ChessEngine } from "@/lib/chess/engine";
 import { engineForRating } from "@/lib/chess/types";
 import { pickAiMove } from "@/lib/ai/stockfish";
-import { updateRatingForOutcome } from "@/lib/rating/elo";
-import { randomBytes } from "node:crypto";
+import { updatePvpRatingByRule, updateRatingForOutcome } from "@/lib/rating/elo";
 
 type ResultKind = "WHITE_WIN" | "BLACK_WIN" | "DRAW";
 type ClockState = { whiteTime: number; blackTime: number; expiredSide: "w" | "b" | null };
@@ -70,64 +69,6 @@ export async function createPvpGameFor(opts: { whiteId: string; blackId: string;
       status: "IN_PROGRESS",
       whiteId: opts.whiteId,
       blackId: opts.blackId,
-      initialTime: opts.initialTime,
-      increment: opts.increment,
-      whiteTime: opts.initialTime,
-      blackTime: opts.initialTime,
-    },
-  });
-}
-
-const BOT_NAMES = [
-  "Orion Vale",
-  "Lyra Crown",
-  "Mavrik Stone",
-  "Selene Noir",
-  "Cassian Holt",
-  "Ada Mercer",
-  "Viktor Rune",
-  "Noa Voss",
-  "Elara Finch",
-  "Aster Quill",
-  "Iris Vale",
-  "Dorian Crest",
-];
-
-async function ensureBotPlayer(rating: number) {
-  const baseName = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
-  const email = `bot-${baseName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Math.max(1000, Math.round(rating))}@rookary.bot`;
-  return prisma.user.upsert({
-    where: { email },
-    update: {
-      name: baseName,
-      rating: Math.max(800, Math.min(2600, Math.round(rating))),
-      rd: 180,
-      volatility: 0.03,
-      isGuest: false,
-    },
-    create: {
-      email,
-      name: baseName,
-      rating: Math.max(800, Math.min(2600, Math.round(rating))),
-      rd: 180,
-      volatility: 0.03,
-      gamesPlayed: 0,
-      wins: 0,
-      losses: 0,
-      draws: 0,
-      passwordHash: randomBytes(16).toString("hex"),
-    },
-  });
-}
-
-export async function createPvpFallbackAiGame(opts: { userId: string; rating: number; initialTime: number; increment: number }) {
-  const bot = await ensureBotPlayer(opts.rating);
-  return prisma.game.create({
-    data: {
-      mode: "PVP",
-      status: "IN_PROGRESS",
-      whiteId: opts.rating >= bot.rating ? opts.userId : bot.id,
-      blackId: opts.rating >= bot.rating ? bot.id : opts.userId,
       initialTime: opts.initialTime,
       increment: opts.increment,
       whiteTime: opts.initialTime,
@@ -280,8 +221,8 @@ export async function finalizeRating(gameId: string) {
     const w = game.white, b = game.black;
     const whiteOutcome = game.result === "WHITE_WIN" ? "win" : game.result === "DRAW" ? "draw" : "loss";
     const blackOutcome = game.result === "BLACK_WIN" ? "win" : game.result === "DRAW" ? "draw" : "loss";
-    const uw = updateRatingForOutcome({ selfRating: w.rating, selfRd: w.rd, selfGames: w.gamesPlayed, oppRating: b.rating, oppRd: b.rd, outcome: whiteOutcome });
-    const ub = updateRatingForOutcome({ selfRating: b.rating, selfRd: b.rd, selfGames: b.gamesPlayed, oppRating: w.rating, oppRd: w.rd, outcome: blackOutcome });
+    const uw = updatePvpRatingByRule({ selfRating: w.rating, selfRd: w.rd, selfGames: w.gamesPlayed, oppRating: b.rating, oppRd: b.rd, outcome: whiteOutcome });
+    const ub = updatePvpRatingByRule({ selfRating: b.rating, selfRd: b.rd, selfGames: b.gamesPlayed, oppRating: w.rating, oppRd: w.rd, outcome: blackOutcome });
     updates.push(prisma.user.update({ where: { id: w.id }, data: { rating: uw.rating, rd: uw.rd, gamesPlayed: w.gamesPlayed + 1, wins: w.wins + (whiteOutcome === "win" ? 1 : 0), losses: w.losses + (whiteOutcome === "loss" ? 1 : 0), draws: w.draws + (whiteOutcome === "draw" ? 1 : 0) } }));
     updates.push(prisma.user.update({ where: { id: b.id }, data: { rating: ub.rating, rd: ub.rd, gamesPlayed: b.gamesPlayed + 1, wins: b.wins + (blackOutcome === "win" ? 1 : 0), losses: b.losses + (blackOutcome === "loss" ? 1 : 0), draws: b.draws + (blackOutcome === "draw" ? 1 : 0) } }));
     updates.push(prisma.ratingHistory.create({ data: { userId: w.id, gameId: game.id, rating: uw.rating, rd: uw.rd, delta: uw.delta, reason: whiteOutcome === "win" ? "game_win" : whiteOutcome === "loss" ? "game_loss" : "game_draw" } }));

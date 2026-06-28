@@ -14,7 +14,6 @@ export function LobbyClient({ user, activeGame }: { user: Me; activeGame: { id: 
   const [busy, setBusy] = useState(false);
   const [queueing, setQueueing] = useState(false);
   const [queueJoinedAt, setQueueJoinedAt] = useState<number | null>(null);
-  const [queueFallbackAt, setQueueFallbackAt] = useState<number | null>(null);
   const [queueElapsed, setQueueElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [matched, setMatched] = useState<string | null>(null);
@@ -48,12 +47,10 @@ export function LobbyClient({ user, activeGame }: { user: Me; activeGame: { id: 
           setMatched(json.gameId);
           setQueueing(false);
           setQueueJoinedAt(null);
-          setQueueFallbackAt(null);
           router.push(`/game/${json.gameId}?mode=pvp`);
           return true;
         }
         if (json.joinedAt) setQueueJoinedAt(json.joinedAt);
-        if (json.fallbackAt) setQueueFallbackAt(json.fallbackAt);
         return false;
       } catch { return false; }
     };
@@ -109,7 +106,7 @@ export function LobbyClient({ user, activeGame }: { user: Me; activeGame: { id: 
           </div>
           <div className="rounded-2xl bg-white/5 p-5 border border-white/10 space-y-3">
             <h3 className="font-display text-xl text-ink">Mesa PvP</h3>
-            <p className="text-sm text-ink-soft">Matchmaking por rating com janela progressiva. Tempo {timeControl} min.</p>
+            <p className="text-sm text-ink-soft">Matchmaking entre jogadores na fila, sem auto-partida e com faixa de rating de ate 200 pontos. Tempo {timeControl} min.</p>
             <Button onClick={joinQueue} variant="secondary" disabled={queueing} className={queueing ? "queue-button queue-button--active" : ""}>
               <span className="queue-button__label">{queueing ? "Procurando" : "Entrar na fila"}</span>
               {queueing && <span className="queue-button__dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>}
@@ -127,9 +124,6 @@ export function LobbyClient({ user, activeGame }: { user: Me; activeGame: { id: 
               <div className="queue-panel rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-ink-soft space-y-1">
                 <p className="text-ink">Você está na fila</p>
                 <p>Tempo aguardando: {queueElapsed}s <span className="queue-panel__pulse" aria-hidden="true">●</span></p>
-                {queueFallbackAt && (
-                  <p>Fallback para IA em até {Math.max(0, Math.ceil((queueFallbackAt - Date.now()) / 1000))}s</p>
-                )}
               </div>
             )}
           </div>

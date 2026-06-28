@@ -1,11 +1,10 @@
-// Matchmaking queue: matches a waiting player with the closest opponent
-// within a rating window that grows over time (classic Elo queue).
+// Matchmaking queue: only matches players actively searching and within
+// the configured rating window.
 
 export interface QueueEntry {
   userId: string;
   rating: number;
   joinedAt: number;
-  fallbackAt: number;
 }
 
 const WAITING: QueueEntry[] = [];
@@ -33,23 +32,14 @@ export function getEntry(userId: string) {
   return WAITING.find((e) => e.userId === userId) ?? null;
 }
 
-const BASE_WINDOW = 100;
-const WINDOW_PER_SECOND = 15;
-const MAX_WINDOW = 600;
+const MATCH_WINDOW = 200;
 
 export function tryMatch(entry: QueueEntry): QueueEntry | null {
-  // Caller (entry) is NOT in the queue yet; we only inspect existing entries.
-  const waited = Math.floor((Date.now() - entry.joinedAt) / 1000);
-  const win = Math.min(MAX_WINDOW, BASE_WINDOW + waited * WINDOW_PER_SECOND);
   const best = WAITING
     .map((e) => ({ entry: e, diff: Math.abs(e.rating - entry.rating) }))
-    .filter((x) => x.diff <= win)
+    .filter((x) => x.entry.userId !== entry.userId && x.diff <= MATCH_WINDOW)
     .sort((a, b) => a.diff - b.diff)[0];
   if (!best) return null;
   dequeue(best.entry.userId);
   return best.entry;
-}
-
-export function shouldFallback(entry: QueueEntry, now = Date.now()) {
-  return now >= entry.fallbackAt;
 }
