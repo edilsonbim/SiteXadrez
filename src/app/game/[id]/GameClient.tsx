@@ -204,7 +204,7 @@ export function GameClient({ gameId, me }: { gameId: string; me: Me }) {
           <div className="flex items-center gap-3">
             {side !== "spectator" && <span className="text-xs text-ink-soft">Você joga de {side === "w" ? "brancas" : "pretas"}</span>}
             <span className="text-xs text-ink-soft">{connectionNote}</span>
-            <Button variant="secondary" size="sm" onClick={reconnect}>Reconectar</Button>
+            {!finished && <Button variant="secondary" size="sm" onClick={reconnect}>Reconectar</Button>}
           </div>
         </CardHeader>
         <CardContent className="p-4 md:p-5">
