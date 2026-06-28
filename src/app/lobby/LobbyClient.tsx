@@ -9,7 +9,7 @@ import { engineForRating, ENGINES } from "@/lib/chess/types";
 
 interface Me { id: string; name: string; image: string | null; rating: number }
 
-export function LobbyClient({ user }: { user: Me }) {
+export function LobbyClient({ user, activeGame }: { user: Me; activeGame: { id: string; mode: string } | null }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [queueing, setQueueing] = useState(false);
@@ -114,6 +114,15 @@ export function LobbyClient({ user }: { user: Me }) {
               <span className="queue-button__label">{queueing ? "Procurando" : "Entrar na fila"}</span>
               {queueing && <span className="queue-button__dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>}
             </Button>
+            {activeGame && (
+              <div className="rounded-xl border border-accent/30 bg-accent/5 p-3 text-sm text-ink-soft space-y-2">
+                <p className="text-ink">Partida em andamento</p>
+                <p>Você pode retomar agora sem perder o estado da mesa.</p>
+                <Button variant="primary" size="sm" onClick={() => router.push(`/game/${activeGame.id}`)}>
+                  Reconectar
+                </Button>
+              </div>
+            )}
             {queueing && (
               <div className="queue-panel rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-ink-soft space-y-1">
                 <p className="text-ink">Você está na fila</p>

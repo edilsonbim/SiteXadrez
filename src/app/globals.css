@@ -84,33 +84,26 @@ html::before {
 }
 .piece.dragging { opacity: 0.35; }
 
-.piece-atlas {
-  position: relative;
+.piece-image {
   display: block;
   width: 82%;
   height: 82%;
-  background-repeat: no-repeat;
-  background-size: 600% 100%;
-  background-position: calc(var(--piece-index, 0) * -100%) center;
-  background-image: var(--piece-atlas);
-  image-rendering: auto;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 8px 10px rgba(0,0,0,.42));
 }
 
-.piece-atlas--white {
+.piece-image--white {
   filter: brightness(0) invert(1) drop-shadow(0 8px 10px rgba(0,0,0,.42));
 }
 
-.piece-atlas--classic {
-  filter: saturate(0.9) contrast(1.04);
-}
-
-.piece-atlas--carved {
-  filter: sepia(0.65) saturate(1.25) contrast(1.05);
-}
-
-.piece-atlas--metal {
-  filter: grayscale(1) brightness(1.12) contrast(1.08);
-}
+.piece-image--classic { filter: saturate(0.9) contrast(1.04); }
+.piece-image--carved { filter: sepia(0.65) saturate(1.25) contrast(1.05); }
+.piece-image--metal { filter: grayscale(1) brightness(1.12) contrast(1.08); }
+.piece-image--white.piece-image--classic { filter: brightness(0) invert(1) saturate(0.9) contrast(1.04) drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
+.piece-image--white.piece-image--carved { filter: brightness(0) invert(1) sepia(0.65) saturate(1.25) contrast(1.05) drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
+.piece-image--white.piece-image--metal { filter: brightness(0) invert(1) grayscale(1) brightness(1.12) contrast(1.08) drop-shadow(0 8px 10px rgba(0,0,0,.42)); }
 
 .piece-appear {
   animation: pieceAppear 180ms ease-out;
