@@ -4,12 +4,12 @@ type PieceStyle = "classic" | "carved" | "metal";
 type Props = { kind: PieceSymbol; color: Color; className?: string; styleName?: PieceStyle };
 
 const PIECE_SRC: Record<PieceSymbol, string> = {
-  b: "/chess/pieces/black-bishop.png",
-  q: "/chess/pieces/black-queen.png",
-  k: "/chess/pieces/black-king.png",
-  n: "/chess/pieces/black-knight.png",
-  r: "/chess/pieces/black-rook.png",
-  p: "/chess/pieces/black-pawn.png",
+  b: "/chess/pieces/black-bishop.png?v=2",
+  q: "/chess/pieces/black-queen.png?v=2",
+  k: "/chess/pieces/black-king.png?v=2",
+  n: "/chess/pieces/black-knight.png?v=2",
+  r: "/chess/pieces/black-rook.png?v=2",
+  p: "/chess/pieces/black-pawn.png?v=2",
 } as const;
 
 export function Piece({ kind, color, className = "", styleName = "classic" }: Props) {
